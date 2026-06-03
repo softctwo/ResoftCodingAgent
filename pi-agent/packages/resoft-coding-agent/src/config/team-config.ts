@@ -1,12 +1,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { RuleSet, SkillRegistry, CodingRule } from "@resoft/agent-core";
+import type { RuleSet, SkillRegistryConfig, CodingRule } from "@resoft/agent-core";
 
 // ─── Team Config ───────────────────────────────────────────────────
 
 export interface TeamConfig {
   rules: RuleSet[];
-  skills: SkillRegistry;
+  skills: SkillRegistryConfig;
 }
 
 const TEAM_CONFIG_DIR =
@@ -142,7 +142,7 @@ export async function loadTeamConfig(configDir?: string): Promise<TeamConfig> {
 
   // Load skills registry
   const registryPath = path.join(base, "registry", "skills.yaml");
-  let skills: SkillRegistry = { skills: {} };
+  let skills: SkillRegistryConfig = { skills: {} };
 
   if (fs.existsSync(registryPath)) {
     const content = fs.readFileSync(registryPath, "utf-8");
@@ -158,7 +158,7 @@ export async function loadTeamConfig(configDir?: string): Promise<TeamConfig> {
           path: String(s.path ?? ""),
           enabled: s.enabled !== false,
           autoTrigger: s.auto_trigger as boolean | undefined,
-          platform: s.platform as SkillRegistry["skills"][string]["platform"],
+          platform: s.platform as SkillRegistryConfig["skills"][string]["platform"],
         };
       }
     }

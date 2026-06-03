@@ -57,7 +57,7 @@ export async function main(config: MainConfig) {
       switch (action) {
         case "list": {
           console.log("Available skills:\n");
-          for (const [name, meta] of Object.entries(skills)) {
+          for (const [name, meta] of Object.entries(skills) as [string, any][]) {
             console.log(
               `  ${meta.enabled ? "✅" : "❌"} ${name.padEnd(20)} ${meta.description.slice(0, 50)}`
             );

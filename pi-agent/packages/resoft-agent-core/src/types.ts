@@ -107,7 +107,7 @@ export interface SkillMeta {
   platform?: ETLPlatform;
 }
 
-export interface SkillRegistry {
+export interface SkillRegistryConfig {
   skills: Record<string, SkillMeta>;
 }
 
@@ -129,4 +129,54 @@ export interface CLIConfig {
   defaultPlatform?: ETLPlatform;
   autoSkillDetection?: boolean;
   maxContextTokens?: number;
+}
+
+// ─── Incremental Rule Engine ───────────────────────────────────────
+
+export interface IncrementalRuleCheck {
+  filePath: string;
+  lastCheckedAt: number;
+  issues: Issue[];
+}
+
+export interface RuleEngineConfig {
+  incremental: boolean;
+  maxFileSizeKB: number;
+  autoFix: boolean;
+  platform: ETLPlatform;
+}
+
+// ─── Code Templates ────────────────────────────────────────────────
+
+export interface TemplateVariable {
+  name: string;
+  defaultValue?: string;
+  description: string;
+  required: boolean;
+}
+
+export interface CodeTemplate {
+  name: string;
+  description: string;
+  platform: ETLPlatform;
+  category: "job" | "pipeline" | "model" | "transform" | "utility";
+  template: string;
+  variables: TemplateVariable[];
+  tags: string[];
+}
+
+// ─── Auto Skill Detection ──────────────────────────────────────────
+
+export interface ProjectFeature {
+  type: "file" | "import" | "framework" | "dependency";
+  pattern: string;
+  weight: number;
+  platforms: ETLPlatform[];
+}
+
+export interface DetectedContext {
+  platform: ETLPlatform;
+  confidence: number;
+  evidence: string[];
+  suggestedSkills: string[];
 }

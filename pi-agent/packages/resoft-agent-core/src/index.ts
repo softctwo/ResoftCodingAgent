@@ -15,6 +15,12 @@ export {
   detectPlatform,
 } from "./context/index.ts";
 export { etlTools } from "./tools/index.ts";
+export { DiffTracker, IncrementalRuleEngine } from "./rules/index.ts";
+export type { IncrementalReviewResult } from "./rules/index.ts";
+export { AutoSkillTrigger, SkillRegistry } from "./skills/index.ts";
+export type { TriggerResult } from "./skills/index.ts";
+export { TemplateEngine, BUILTIN_TEMPLATES } from "./templates/index.ts";
+export type { CodeTemplate as TemplateCodeTemplate } from "./templates/index.ts";
 export type {
   ETLPlatform,
   IssueSeverity,
@@ -29,7 +35,7 @@ export type {
   AfterToolCallHook,
   ResoftAgentConfig,
   SkillMeta,
-  SkillRegistry,
+  SkillRegistryConfig,
   ETLProjectContext,
   CLIConfig,
 } from "./types.ts";

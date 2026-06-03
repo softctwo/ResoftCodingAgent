@@ -37,3 +37,75 @@ skills:
     platform: custom
     auto_trigger: false
     description: "Template for creating custom team-specific skills"
+
+  # ── Community Skills ──
+
+  - name: superpowers
+    path: skills/superpowers/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: true
+    description: "Test-first development and code quality checks"
+
+  - name: superclaude
+    path: skills/superclaude/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: true
+    description: "Command menu for structured task execution: analyze, fix, feature, optimize, docs, review"
+
+  - name: minimax
+    path: skills/minimax/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: true
+    description: "Workflow templates for frontend, fullstack, mobile, and documentation projects"
+
+  - name: anthropic-skills
+    path: skills/anthropic-skills/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: false
+    description: "Reference patterns from Anthropic's official skill library for skill design and best practices"
+
+  - name: vercel-skills
+    path: skills/vercel-skills/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: true
+    description: "Web development quality rules for React, Next.js, and frontend projects"
+
+  - name: planning-files
+    path: skills/planning-files/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: false
+    description: "Markdown-based project planning, progress tracking, and decision logging"
+
+  - name: context-engineering
+    path: skills/context-engineering/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: false
+    description: "AI context management: summarization strategies, token budgeting, and reset procedures"
+
+  - name: composio
+    path: skills/composio/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: true
+    description: "External service integration: GitHub, Notion, Slack, databases, and APIs"
+
+  - name: antfu-skills
+    path: skills/antfu-skills/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: false
+    description: "Advanced skill design patterns: chaining, parameterization, DX, and anti-patterns"
+
+  - name: awesome-skills
+    path: skills/awesome-skills/SKILL.md
+    enabled: true
+    platform: custom
+    auto_trigger: false
+    description: "Directory and navigation guide for discovering, evaluating, and contributing skills"
