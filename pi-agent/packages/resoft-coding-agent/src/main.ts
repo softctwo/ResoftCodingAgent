@@ -2,8 +2,9 @@ import { loadTeamConfig, type TeamConfig } from "./config/team-config.ts";
 import { runChatMode, type ChatModeConfig } from "./modes/chat-mode.ts";
 import { runReviewMode, type ReviewModeConfig } from "./modes/review-mode.ts";
 import { runInitMode, type InitModeConfig } from "./modes/init-mode.ts";
+import { runTemplateMode, type TemplateModeConfig } from "./modes/template-mode.ts";
 
-export type AgentMode = "chat" | "review" | "init" | "skill";
+export type AgentMode = "chat" | "review" | "init" | "skill" | "template";
 
 export interface MainConfig {
   mode: AgentMode;
@@ -11,6 +12,7 @@ export interface MainConfig {
   review?: ReviewModeConfig;
   init?: InitModeConfig;
   skill?: { action: "list" | "enable" | "disable"; name?: string };
+  template?: TemplateModeConfig;
   teamConfigPath?: string;
 }
 
@@ -95,6 +97,15 @@ export async function main(config: MainConfig) {
           break;
         }
       }
+      break;
+    }
+
+    case "template": {
+      if (!config.template) {
+        console.error("Template mode requires template config.");
+        process.exit(1);
+      }
+      runTemplateMode(config.template);
       break;
     }
   }

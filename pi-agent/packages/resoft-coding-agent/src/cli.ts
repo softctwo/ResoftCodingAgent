@@ -38,6 +38,7 @@ program
   .command("review [file]")
   .description("Review ETL code for issues")
   .option("-p, --platform <platform>", "Target platform", "sql")
+  .option("--incremental", "Incremental review (only changed lines)")
   .option("--team-config <path>", "Path to team config directory")
   .action(async (file, options) => {
     const config: MainConfig = {
@@ -45,6 +46,7 @@ program
       review: {
         file,
         platform: options.platform,
+        incremental: options.incremental ?? false,
       },
       teamConfigPath: options.teamConfig,
     };
@@ -70,14 +72,21 @@ program
 
 program
   .command("skill <action> [name]")
-  .description("Manage skills: list, enable, disable")
+  .description("Manage skills: list, enable, disable, detect")
   .option("--team-config <path>", "Path to team config directory")
   .action(async (action, name, options) => {
-    const validActions = ["list", "enable", "disable"];
+    const validActions = ["list", "enable", "disable", "detect"];
     if (!validActions.includes(action)) {
       console.error(`Invalid action: "${action}". Use: ${validActions.join(", ")}`);
       process.exit(1);
     }
+
+    if (action === "detect") {
+      const { runSkillDetect } = await import("./modes/skill-detect.ts");
+      await runSkillDetect(name);
+      return;
+    }
+
     const config: MainConfig = {
       mode: "skill",
       skill: {
@@ -87,6 +96,37 @@ program
       teamConfigPath: options.teamConfig,
     };
     await main(config);
+  });
+
+// ─── template ───────────────────────────────────────────────────────
+
+program
+  .command("template <action>")
+  .description("Manage code templates: list, search, render, export")
+  .option("--platform <platform>", "Filter by platform")
+  .option("--category <category>", "Filter by category")
+  .option("--tag <tag>", "Filter by tag")
+  .option("-k, --keyword <keyword>", "Search keyword")
+  .option("-i, --id <id>", "Template ID")
+  .option("--vars <json>", "JSON string of variable values")
+  .option("-o, --output <file>", "Output file for export")
+  .action(async (action, options) => {
+    const validActions = ["list", "search", "render", "export"];
+    if (!validActions.includes(action)) {
+      console.error(`Invalid action: "${action}". Use: ${validActions.join(", ")}`);
+      process.exit(1);
+    }
+    const { runTemplateMode } = await import("./modes/template-mode.ts");
+    runTemplateMode({
+      action: action as "list" | "search" | "render" | "export",
+      platform: options.platform,
+      category: options.category,
+      tag: options.tag,
+      keyword: options.keyword,
+      id: options.id,
+      vars: options.vars,
+      output: options.output,
+    });
   });
 
 program.parse(process.argv);

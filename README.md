@@ -6,7 +6,7 @@
 
 基于 [earendil-works/pi](https://github.com/earendil-works/pi) agent 扩展，专注 SQL/PySpark/Flink/dbt 数据工程
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](docs/CHANGELOG.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-private-red)]()
 
@@ -21,6 +21,9 @@ ResoftCodingAgent 是面向数据工程团队的 AI 编程助手，在 pi agent 
 - **增量规则引擎** — 只检查变更行，大文件秒级审查，diff 追踪 + 规则历史
 - **Skill 自动触发** — 自动检测项目平台（Spark/Flink/dbt/SQL），按需启用 Skill
 - **代码模板库** — 14 个内置 ETL 模板，一键生成 Spark 作业、Flink 管道、dbt 模型
+- **模板 CLI 集成** — `resoft template list|search|render` 完整命令行支持
+- **Skill 自动检测** — `resoft skill detect` 扫描项目，平台检测 + 可视化推荐
+- **终端美化输出** — ANSI 颜色、表格、进度条，审查结果结构化展示
 - **社区 Skill 集成** — 内置 10 个社区精华 Skill（TDD、前后端工作流、上下文管理等）
 - **多平台支持** — SQL、PySpark、Flink SQL、dbt，自动检测并注入平台上下文
 - **团队编码规则** — YAML 配置化规则集，Git 版本控制，全团队共享
@@ -85,24 +88,29 @@ npm run resoft chat -p flink     # Flink 模式
 npm run resoft chat -p dbt       # dbt 模式
 
 # ─── 增量代码审查 ───
-npm run resoft review orders.sql              # 全量审查
-npm run resoft review --incremental etl.py    # 增量审查（仅变更行）
+npm run resoft review orders.sql                     # 全量审查
+npm run resoft review --incremental etl.py -p spark  # 增量审查（仅变更行）
+npm run resoft review --incremental --team-config ../team-config orders.sql
 
 # ─── 项目初始化 ───
 npm run resoft init spark-job    # Spark 作业模板
 npm run resoft init flink-job    # Flink 管道模板
 npm run resoft init dbt-project  # dbt 项目模板
 
+# ─── 模板引擎 ───
+npm run resoft template list                        # 列出所有模板
+npm run resoft template list --platform spark        # 按平台筛选
+npm run resoft template search -k "jdbc"            # 搜索模板
+npm run resoft template render -i spark-read-jdbc \  # 渲染模板
+  --vars '{"SOURCE_TABLE":"users","JDBC_URL":"jdbc:mysql://db"}'
+npm run resoft template export -o templates.json     # 导出 JSON
+
 # ─── Skill 管理 ───
-npm run resoft skill list        # 查看所有 Skill
-npm run resoft skill detect      # 自动检测项目并推荐 Skill
+npm run resoft skill list                    # 查看所有 Skill
+npm run resoft skill detect                  # 自动检测当前项目
+npm run resoft skill detect ./path/to/project # 检测指定目录
 npm run resoft skill enable superpowers
 npm run resoft skill disable resoft-dbt
-
-# ─── 模板引擎 ───
-npm run resoft template list                     # 列出所有模板
-npm run resoft template list --platform spark     # 按平台筛选
-npm run resoft template search "jdbc"            # 搜索模板
 ```
 
 ## 架构
@@ -112,9 +120,15 @@ ResoftCodingAgent
 │
 ├── 📦 resoft-coding-agent             CLI 工具层
 │   ├── CLI (commander.js)             resoft chat/review/init/skill/template
-│   ├── Modes                          模式分发（交互/审查/初始化）
+│   ├── Modes                          模式分发
+│   │   ├── chat-mode.ts              交互开发
+│   │   ├── review-mode.ts            增量规则审查 + 美化输出
+│   │   ├── template-mode.ts          模板列表/搜索/渲染/导出
+│   │   ├── skill-detect.ts           项目扫描 + 平台检测 + Skill 推荐
+│   │   └── init-mode.ts              项目初始化
 │   ├── Extensions                     pi Extension (ETL 代码审查)
-│   └── Team Config Loader             YAML 规则集 + Skill 注册表加载
+│   ├── Config                         YAML 规则集 + Skill 注册表加载
+│   └── Utils                          format-output (ANSI 颜色/表格/diff)
 │
 ├── 📦 resoft-agent-core               核心扩展层
 │   ├── ResoftAgent                    包装 pi Agent，注入 ETL 能力
@@ -328,7 +342,7 @@ npm run resoft skill disable <name># 禁用
 
 - [x] v0.1.0 — 核心框架、4 个 ETL Skill、Hook 链、CLI
 - [x] v0.2.0 — 增量规则引擎、Skill 自动触发、代码模板库、10 个社区 Skill
-- [ ] v0.3.0 — 模板 CLI 集成、Skill 自动检测命令、规则引擎可视化
+- [x] v0.3.0 — 模板 CLI 集成、Skill 自动检测命令、终端美化输出
 - [ ] v1.0.0 — 流水线集成、团队 Dashboard、用量统计
 
 ## License
