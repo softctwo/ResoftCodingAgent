@@ -17,29 +17,29 @@
 
 import { Agent } from "@earendil-works/pi-agent-core";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { etlTools } from "./tools";
+import { etlTools } from "./tools/index.ts";
 import {
   composeBeforeHooks,
   composeAfterHooks,
   createSqlReviewHook,
   createSecurityCheckHook,
   createFormatCheckHook,
-} from "./hooks";
+} from "./hooks/index.ts";
 import {
   createETLContextTransform,
   buildProjectContext,
   detectPlatform,
-} from "./context";
+} from "./context/index.ts";
 import type {
   ResoftAgentConfig,
   ETLPlatform,
   ETLProjectContext,
   CodingRule,
-} from "./types";
+} from "./types.ts";
 
 // ─── 默认规则 ───────────────────────────────────────────────
 
-const DEFAULT_SECURITY_RULES: CodingRule[] = [
+export const DEFAULT_SECURITY_RULES: CodingRule[] = [
   {
     id: "no-drop-table",
     description: "禁止直接执行 DROP TABLE/DATABASE",
@@ -63,7 +63,7 @@ const DEFAULT_SECURITY_RULES: CodingRule[] = [
   },
 ];
 
-const DEFAULT_SQL_RULES: CodingRule[] = [
+export const DEFAULT_SQL_RULES: CodingRule[] = [
   {
     id: "keyword-case",
     description: "SQL 关键字应大写",
@@ -93,7 +93,7 @@ const DEFAULT_SQL_RULES: CodingRule[] = [
   },
 ];
 
-const DEFAULT_FORMAT_RULES: CodingRule[] = [
+export const DEFAULT_FORMAT_RULES: CodingRule[] = [
   {
     id: "indent-four-spaces",
     description: "使用4空格缩进",
@@ -167,11 +167,11 @@ export class ResoftAgent {
       },
       beforeToolCall: composeBeforeHooks([
         createSecurityCheckHook(securityRules),
-      ]),
+      ]) as any,
       afterToolCall: composeAfterHooks([
         createSqlReviewHook(sqlRules),
         createFormatCheckHook(formatRules),
-      ]),
+      ]) as any,
     });
   }
 
@@ -185,13 +185,13 @@ export class ResoftAgent {
       root
     );
     if (!this.config.platform) {
-      this.projectContext.platform = detectPlatform(root);
+      this.projectContext.platform = await detectPlatform(root);
     } else {
       this.projectContext.platform = this.config.platform;
     }
 
     // 设置 context transform（pi Agent 真实 API）
-    this.agent.transformContext = createETLContextTransform(this.projectContext);
+    this.agent.transformContext = async (messages: AgentMessage[], _signal?: AbortSignal) => createETLContextTransform(this.projectContext!)(messages);
   }
 
   /** 向 Agent 发送提示词 */
@@ -207,11 +207,6 @@ export class ResoftAgent {
     this.agent.subscribe(callback);
   }
 
-  /** 当前是否正在处理 */
-  get pending(): boolean {
-    return this.agent.pending;
-  }
-
   /** 获取项目上下文 */
   getProjectContext(): ETLProjectContext | null {
     return this.projectContext;
@@ -225,17 +220,17 @@ export class ResoftAgent {
 
 // ─── 导出 ───────────────────────────────────────────────────
 
-export { etlTools } from "./tools";
+export { etlTools } from "./tools/index.ts";
 export {
   composeBeforeHooks,
   composeAfterHooks,
   createSqlReviewHook,
   createSecurityCheckHook,
   createFormatCheckHook,
-} from "./hooks";
+} from "./hooks/index.ts";
 export {
   createETLContextTransform,
   buildProjectContext,
   detectPlatform,
-} from "./context";
-export type * from "./types";
+} from "./context/index.ts";
+export type * from "./types.ts";

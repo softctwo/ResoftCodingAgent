@@ -1,20 +1,20 @@
 // ─── Resoft Agent Core — public API ────────────────────────────────
 
-export { ResoftAgent, DEFAULT_SECURITY_RULES, DEFAULT_SQL_RULES, DEFAULT_FORMAT_RULES, buildETLSystemPrompt } from "./agent";
+export { ResoftAgent, DEFAULT_SECURITY_RULES, DEFAULT_SQL_RULES, DEFAULT_FORMAT_RULES, buildETLSystemPrompt } from "./agent.ts";
 export {
   composeBeforeHooks,
   composeAfterHooks,
   createSqlReviewHook,
   createSecurityCheckHook,
   createFormatCheckHook,
-} from "./hooks/index";
+} from "./hooks/index.ts";
 export {
   PLATFORM_SYSTEM_PROMPTS,
   createETLContextTransform,
   buildProjectContext,
   detectPlatform,
-} from "./context/index";
-export { etlTools } from "./tools/index";
+} from "./context/index.ts";
+export { etlTools } from "./tools/index.ts";
 export type {
   ETLPlatform,
   IssueSeverity,
@@ -32,4 +32,4 @@ export type {
   SkillRegistry,
   ETLProjectContext,
   CLIConfig,
-} from "./types";
+} from "./types.ts";

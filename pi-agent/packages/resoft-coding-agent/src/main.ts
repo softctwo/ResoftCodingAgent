@@ -1,7 +1,7 @@
-import { loadTeamConfig, type TeamConfig } from "./config/team-config";
-import { runChatMode, type ChatModeConfig } from "./modes/chat-mode";
-import { runReviewMode, type ReviewModeConfig } from "./modes/review-mode";
-import { runInitMode, type InitModeConfig } from "./modes/init-mode";
+import { loadTeamConfig, type TeamConfig } from "./config/team-config.ts";
+import { runChatMode, type ChatModeConfig } from "./modes/chat-mode.ts";
+import { runReviewMode, type ReviewModeConfig } from "./modes/review-mode.ts";
+import { runInitMode, type InitModeConfig } from "./modes/init-mode.ts";
 
 export type AgentMode = "chat" | "review" | "init" | "skill";
 

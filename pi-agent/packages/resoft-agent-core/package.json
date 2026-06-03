@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./hooks": "./src/hooks/index.ts",
-    "./tools": "./src/tools/index.ts",
-    "./context": "./src/context/index.ts"
+    ".": "./dist/index.js",
+    "./hooks": "./dist/hooks/index.js",
+    "./tools": "./dist/tools/index.js",
+    "./context": "./dist/context/index.js"
   },
   "scripts": {
-    "build": "tsgo --noEmit",
+    "build": "tsgo -p tsconfig.build.json",
     "test": "vitest run",
     "lint": "tsgo --noEmit",
     "clean": "rm -rf dist"

@@ -1,4 +1,4 @@
-import type { TeamConfig } from "../config/team-config";
+import type { TeamConfig } from "../config/team-config.ts";
 
 const VALID_TEMPLATES = ["spark-job", "flink-job", "dbt-project"] as const;
 type Template = (typeof VALID_TEMPLATES)[number];

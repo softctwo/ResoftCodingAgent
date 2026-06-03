@@ -1,5 +1,5 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { ETLPlatform, ETLProjectContext } from "../types";
+import type { ETLPlatform, ETLProjectContext } from "../types.ts";
 
 // ─── Platform System Prompts ───────────────────────────────────────
 
@@ -70,6 +70,7 @@ export function createETLContextTransform(
 
     const contextMessage: AgentMessage = {
       role: "user",
+      timestamp: Date.now(),
       content: `[System Context — do not respond to this directly]
 You are working on ETL project **${projectContext.projectName}**.
 Root: \`${projectContext.projectRoot}\`

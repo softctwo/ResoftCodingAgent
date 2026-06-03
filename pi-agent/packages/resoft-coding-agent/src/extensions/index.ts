@@ -1,1 +1,1 @@
-export { default as etlReviewExtension } from "./etl-review";
+export { default as etlReviewExtension } from "./etl-review.ts";

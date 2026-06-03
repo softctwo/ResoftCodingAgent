@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { main } from "./main";
-import type { MainConfig } from "./main";
+import { main } from "./main.ts";
+import type { MainConfig } from "./main.ts";
 
 const program = new Command();
 

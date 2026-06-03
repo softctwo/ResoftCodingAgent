@@ -60,3 +60,9 @@ packages/coding-agent/binaries/
 plans/
 todo.md
 collect.sh
+
+# Pi build artifacts (in-source compiled output)
+pi-agent/packages/**/src/**/*.js
+pi-agent/packages/**/src/**/*.js.map
+pi-agent/packages/**/src/**/*.d.ts
+pi-agent/packages/**/src/**/*.d.ts.map

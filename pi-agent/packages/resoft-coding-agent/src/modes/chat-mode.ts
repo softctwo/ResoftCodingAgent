@@ -1,5 +1,5 @@
 import { ResoftAgent } from "@resoft/agent-core";
-import type { TeamConfig } from "../config/team-config";
+import type { TeamConfig } from "../config/team-config.ts";
 
 export interface ChatModeConfig {
   platform?: string;

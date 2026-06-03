@@ -1,4 +1,4 @@
-import type { TeamConfig } from "../config/team-config";
+import type { TeamConfig } from "../config/team-config.ts";
 
 export interface ReviewModeConfig {
   file?: string;

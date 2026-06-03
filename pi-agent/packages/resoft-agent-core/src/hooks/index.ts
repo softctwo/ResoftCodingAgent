@@ -6,7 +6,7 @@ import type {
   AfterToolCallContext,
   AfterToolCallResult,
   CodingRule,
-} from "../types";
+} from "../types.ts";
 
 // ─── Compose Before Hooks ──────────────────────────────────────────
 // Chains multiple before-hooks. Short-circuits on the first `block: true`.

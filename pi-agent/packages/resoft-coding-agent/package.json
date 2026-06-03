@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "bin": {
     "resoft": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsgo --noEmit",
+    "build": "tsgo -p tsconfig.build.json",
     "test": "vitest run",
     "lint": "tsgo --noEmit",
     "clean": "rm -rf dist"

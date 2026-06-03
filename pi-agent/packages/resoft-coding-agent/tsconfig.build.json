@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "skipLibCheck": true,
+    "paths": {
+      "@earendil-works/pi-agent-core": ["../agent/dist/index.d.ts"],
+      "@earendil-works/pi-ai": ["../ai/dist/index.d.ts"],
+      "@earendil-works/pi-coding-agent": ["../coding-agent/src/core/extensions/types.ts"],
+      "@resoft/agent-core": ["../resoft-agent-core/dist/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
