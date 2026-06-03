@@ -30,21 +30,28 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: |
-          cd pi-agent && npm install
+        run: npm install
 
       - name: Build
-        run: |
-          cd pi-agent && npm run build
+        run: npm run build
 
       - name: Get changed ETL files
         id: changed
         run: |
-          FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(sql|py|java|scala)$' | tr '\n' ' ')
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(sql|py|java|scala)$' | tr '\n' ' ')
+          else
+            FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '\.(sql|py|java|scala)$' | tr '\n' ' ')
+          fi
           echo "files=$FILES" >> $GITHUB_OUTPUT
 
       - name: Run Resoft Review
         if: steps.changed.outputs.files != ''
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }} \
-          npx resoft ci --files "${{ steps.changed.outputs.files }}" --format json --min-severity warning
+          node pi-agent/packages/resoft-coding-agent/dist/cli.js ci \
+            --files "${{ steps.changed.outputs.files }}" \
+            --format json \
+            --min-severity warning \
+            --fail-on-error

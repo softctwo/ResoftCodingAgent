@@ -56,7 +56,7 @@ export function createStore(): DashboardStore {
   };
 }
 
-export function handleAPI(store: DashboardStore, req: IncomingMessage, res: ServerResponse): boolean {
+export function handleAPI(store: DashboardStore, req: IncomingMessage, res: ServerResponse, saveCb?: () => void): boolean {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 
   // API: GET /api/summary
@@ -128,6 +128,7 @@ export function handleAPI(store: DashboardStore, req: IncomingMessage, res: Serv
           });
         }
         json(res, { success: true });
+        if (saveCb) saveCb();
       } catch {
         json(res, { success: false, error: "Invalid JSON" }, 400);
       }

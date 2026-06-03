@@ -1,24 +1,37 @@
 #!/bin/bash
 # Resoft Pre-commit Hook
 # Install: ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
+# Skip:    git commit --no-verify
 
-echo "🔍 Resoft Code Review — checking staged ETL files..."
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
 # Get staged ETL files
-FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sql|py|java|scala)$')
+FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(sql|py|java|scala)$' || true)
 
 if [ -z "$FILES" ]; then
-  echo "No ETL files to check. ✅"
+  echo "✅ Resoft: No ETL files to check."
   exit 0
 fi
 
-echo "Files to review:"
+if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+  echo "⚠️  Resoft: No LLM API key set — skipping review."
+  echo "   Set DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY."
+  exit 0
+fi
+
+CLI_PATH="$REPO_ROOT/pi-agent/packages/resoft-coding-agent/dist/cli.js"
+if [ ! -f "$CLI_PATH" ]; then
+  echo "⚠️  Resoft: dist not built — run 'npm run build' first."
+  exit 0
+fi
+
+echo "🔍 Resoft Code Review — checking staged ETL files..."
 echo "$FILES" | sed 's/^/  /'
 echo ""
 
+cd "$REPO_ROOT/pi-agent" || exit 1
+
 # Run resoft in CI mode
-cd pi-agent || exit 1
-DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}" \
 node packages/resoft-coding-agent/dist/cli.js ci \
   --files "$(echo $FILES | tr '\n' ' ')" \
   --format text \
@@ -33,5 +46,5 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-echo "✅ All checks passed!"
+echo "✅ Resoft: All checks passed!"
 exit 0

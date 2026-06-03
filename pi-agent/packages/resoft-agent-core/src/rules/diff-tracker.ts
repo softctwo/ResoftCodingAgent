@@ -17,6 +17,7 @@ export interface FileSnapshot {
 
 export class DiffTracker {
   private snapshots: Map<string, FileSnapshot> = new Map();
+  private contentCache: Map<string, string> = new Map();
 
   /** Compute a simple content hash */
   private hash(content: string): string {
@@ -100,22 +101,13 @@ export class DiffTracker {
 
   /** Get cached line content for a tracked file */
   private getCachedLines(filePath: string): string[] | null {
-    const snap = this.snapshots.get(filePath);
-    if (!snap) return null;
-    // Lines are reconstructed from hash — in production, store full content
-    const cachedContent = (this as any)._contentCache?.get(filePath) as
-      | string
-      | undefined;
+    const cachedContent = this.contentCache.get(filePath);
     return cachedContent ? cachedContent.split("\n") : null;
   }
 
   /** Update snapshot after a successful review */
   updateSnapshot(filePath: string, content: string, issues: Issue[]): void {
-    // Store full content for accurate diffing
-    if (!(this as any)._contentCache) {
-      (this as any)._contentCache = new Map<string, string>();
-    }
-    (this as any)._contentCache.set(filePath, content);
+    this.contentCache.set(filePath, content);
 
     this.snapshots.set(filePath, {
       filePath,
@@ -129,7 +121,7 @@ export class DiffTracker {
   /** Clear all snapshots and caches */
   clear(): void {
     this.snapshots.clear();
-    (this as any)._contentCache?.clear();
+    this.contentCache.clear();
   }
 
   /** Get all tracked files */
@@ -145,6 +137,6 @@ export class DiffTracker {
   /** Remove a single file from tracking */
   removeFile(filePath: string): void {
     this.snapshots.delete(filePath);
-    (this as any)._contentCache?.delete(filePath);
+    this.contentCache.delete(filePath);
   }
 }

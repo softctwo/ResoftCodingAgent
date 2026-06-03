@@ -1,5 +1,8 @@
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
+import { homedir } from "node:os";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { createStore, handleAPI, handlePage } from "./routes.ts";
 import type { DashboardStore } from "./routes.ts";
 
@@ -16,6 +19,7 @@ export class DashboardServer {
   constructor(config: DashboardConfig = {}) {
     this.config = { port: 3456, host: "127.0.0.1", ...config };
     this.store = createStore();
+    this.loadStore();
 
     // Populate team if provided
     if (config.teamMembers) {
@@ -27,6 +31,34 @@ export class DashboardServer {
         lastActive: 0,
       }));
     }
+  }
+
+  private getDataDir(): string {
+    const dir = join(homedir(), ".resoft", "dashboard");
+    mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+
+  private getStorePath(): string {
+    return join(this.getDataDir(), "store.json");
+  }
+
+  private loadStore(): void {
+    try {
+      const path = this.getStorePath();
+      if (existsSync(path)) {
+        const raw = JSON.parse(readFileSync(path, "utf-8"));
+        if (raw.reviews) this.store.reviews = raw.reviews;
+        if (raw.usage) this.store.usage = raw.usage;
+        if (raw.team) this.store.team = raw.team;
+      }
+    } catch { /* no saved data yet */ }
+  }
+
+  public saveStore(): void {
+    try {
+      writeFileSync(this.getStorePath(), JSON.stringify(this.store, null, 2), "utf-8");
+    } catch { /* ignore save errors */ }
   }
 
   start(): Promise<void> {
@@ -47,7 +79,7 @@ export class DashboardServer {
         }
 
         // Try API first, then page
-        if (!handleAPI(store, req, res)) {
+        if (!handleAPI(store, req, res, () => this.saveStore())) {
           handlePage(store, req, res);
         }
       });

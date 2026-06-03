@@ -38,13 +38,65 @@ export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig
   const ctx = agent.getProjectContext();
   console.log(`Project context: ${ctx?.projectName} (${ctx?.platform})`);
 
-  // TODO: Full REPL loop with readline
-  console.log("\nChat mode initialized. REPL coming soon...\n");
+  // Start REPL loop
+  const readline = await import("node:readline/promises");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: `\n${platform} > `,
+  });
 
   // Subscribe to agent events for streaming output
-  agent.subscribe((event) => {
-    console.log("[agent event]", event);
+  agent.subscribe((event: any) => {
+    if (event.type === "tool_call") {
+      console.log(`\n🔧 Tool: ${event.tool}`);
+    } else if (event.type === "text" && event.content) {
+      process.stdout.write(event.content);
+    } else if (event.type === "done") {
+      console.log("\n✅ Done.");
+    } else if (event.type === "error") {
+      console.error(`\n❌ Error: ${event.error}`);
+    }
   });
+
+  console.log(`\n💡 Commands: /quit to exit, /review to trigger review, /help for more`);
+  rl.prompt();
+
+  for await (const line of rl) {
+    const input = line.trim();
+    if (!input) {
+      rl.prompt();
+      continue;
+    }
+
+    // Handle special commands
+    if (input === "/quit" || input === "/exit") {
+      console.log("Goodbye! 👋");
+      rl.close();
+      process.exit(0);
+    }
+
+    if (input === "/help") {
+      console.log(`\nCommands:\n  /quit, /exit    Exit the chat\n  /review         Trigger code review on last response\n  /help           Show this help\n`);
+      rl.prompt();
+      continue;
+    }
+
+    if (input === "/review") {
+      console.log("Review mode requested. (Run 'resoft review <file>' in another terminal)");
+      rl.prompt();
+      continue;
+    }
+
+    // Send to agent
+    try {
+      await agent.prompt(input);
+    } catch (err: any) {
+      console.error(`\n❌ Error: ${err.message}`);
+    }
+
+    rl.prompt();
+  }
 
   return agent;
 }

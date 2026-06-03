@@ -1,4 +1,6 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { resolve, relative } from "node:path";
 
 // ─── Read ETL File Tool ────────────────────────────────────────────
 
@@ -13,9 +15,25 @@ const readFileTool: AgentTool = {
     },
     required: ["path"],
   },
-  execute: async (_args) => {
-    // TODO: Real implementation using workspace file reading
-    return { content: [{ type: "text", text: "// TODO: Implement read_etl_file" }], truncated: false, details: {} };
+  execute: async (_toolCallId, params) => {
+    try {
+      const path = String((params as any).path ?? "");
+      const cwd = process.cwd();
+      const filePath = resolve(cwd, path);
+      if (!existsSync(filePath)) {
+        return { content: [{ type: "text", text: `File not found: ${path}` }], truncated: false, details: {} };
+      }
+      const st = statSync(filePath);
+      if (st.isDirectory()) {
+        return { content: [{ type: "text", text: `Path is a directory: ${path}` }], truncated: false, details: {} };
+      }
+      const content = readFileSync(filePath, "utf-8");
+      const truncated = content.length > 50000;
+      const text = truncated ? content.substring(0, 50000) + "\n... (truncated)" : content;
+      return { content: [{ type: "text", text }], truncated, details: { path: filePath, size: st.size } };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], truncated: false, details: {} };
+    }
   },
 };
 
@@ -33,9 +51,18 @@ const writeFileTool: AgentTool = {
     },
     required: ["path", "content"],
   },
-  execute: async (_args) => {
-    // TODO: Real implementation using workspace file writing
-    return { content: [{ type: "text", text: "// TODO: Implement write_etl_file" }], truncated: false, details: {} };
+  execute: async (_toolCallId, params) => {
+    try {
+      const p = params as any;
+      const path = String(p.path ?? "");
+      const content = String(p.content ?? "");
+      const cwd = process.cwd();
+      const filePath = resolve(cwd, path);
+      writeFileSync(filePath, content, "utf-8");
+      return { content: [{ type: "text", text: `Written to ${relative(cwd, filePath)} (${content.length} bytes)` }], truncated: false, details: { path: filePath, bytes: content.length } };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], truncated: false, details: {} };
+    }
   },
 };
 
@@ -53,9 +80,19 @@ const sqlFormatTool: AgentTool = {
     },
     required: ["sql"],
   },
-  execute: async (_args) => {
-    // TODO: Use external formatter (e.g. sql-formatter npm package or Python sql-formatter.py)
-    return { content: [{ type: "text", text: "// TODO: Implement format_sql" }], truncated: false, details: {} };
+  execute: async (_toolCallId, params) => {
+    try {
+      const p = params as any;
+      const sql = String(p.sql ?? "");
+      const KEYWORDS = /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|AND|OR|GROUP BY|ORDER BY|HAVING|LIMIT|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|ALTER|DROP|UNION|ALL|DISTINCT|AS|IN|BETWEEN|LIKE|IS|NULL|NOT|CASE|WHEN|THEN|ELSE|END|EXISTS)\b/gi;
+      let formatted = sql.replace(/\s+/g, " ").trim();
+      formatted = formatted.replace(KEYWORDS, (match: string) => match.toUpperCase());
+      formatted = formatted.replace(/\b(SELECT|FROM|WHERE|JOIN|GROUP BY|ORDER BY|HAVING|LIMIT|UNION)\b/gi, "\n$1");
+      formatted = formatted.replace(/\n\s*\n/g, "\n").trim();
+      return { content: [{ type: "text", text: formatted }], truncated: false, details: { dialect: String(p.dialect ?? "sql") } };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], truncated: false, details: {} };
+    }
   },
 };
 
@@ -73,13 +110,26 @@ const sqlValidateTool: AgentTool = {
     },
     required: ["sql"],
   },
-  execute: async (_args) => {
-    // TODO: Parse & lint SQL
-    return {
-      content: [{ type: "text", text: JSON.stringify({ valid: true, issues: [] }) }],
-      truncated: false,
-      details: {},
-    };
+  execute: async (_toolCallId, params) => {
+    try {
+      const p = params as any;
+      const sql = String(p.sql ?? "");
+      const issues: Array<{ line: number; message: string; severity: string }> = [];
+
+      if (/;\s*DROP\s+TABLE/i.test(sql)) issues.push({ line: 1, message: "Potential DROP TABLE detected", severity: "error" });
+      const quoteCount = (sql.match(/'/g) || []).length;
+      if (quoteCount % 2 !== 0) issues.push({ line: 1, message: "Unclosed single quote", severity: "error" });
+      if (/\bDELETE\s+FROM\s+\w+\s*$/im.test(sql)) issues.push({ line: 1, message: "DELETE without WHERE clause", severity: "error" });
+      if (/SELECT\s+\*/i.test(sql)) issues.push({ line: 1, message: "Using SELECT *", severity: "warning" });
+
+      return {
+        content: [{ type: "text", text: JSON.stringify({ valid: issues.length === 0, issues }, null, 2) }],
+        truncated: false,
+        details: { dialect: String(p.dialect ?? "sql"), issuesFound: issues.length },
+      };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], truncated: false, details: {} };
+    }
   },
 };
 

@@ -25,6 +25,27 @@ export class TokenCounter {
     return Math.ceil(text.length / 4);
   }
 
+  /** More accurate BPE-aware token counting */
+  estimateTokensAccurate(text: string): number {
+    if (!text) return 0;
+    const tokens = text
+      .replace(/([{}()\[\];:,.<>!=+\-*/&|^~@#$%^])/g, " $1 ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean);
+    let count = 0;
+    for (const t of tokens) {
+      count += t.length <= 4 ? 1 : Math.ceil(t.length / 3.5);
+    }
+    return Math.max(1, Math.ceil(count));
+  }
+
+  /** Record from actual LLM response usage */
+  recordActualUsage(usage: Omit<TokenUsage, "timestamp">): void {
+    this.recordUsage({ ...usage, timestamp: Date.now() });
+  }
+
   /** Record usage for a session */
   recordUsage(usage: TokenUsage): void {
     if (!this.sessions.has(usage.sessionId)) {
