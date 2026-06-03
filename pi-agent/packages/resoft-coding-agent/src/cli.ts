@@ -110,6 +110,7 @@ program
   .command("skill <action> [name]")
   .description("Manage skills: list, enable, disable, detect")
   .option("--team-config <path>", "Path to team config directory")
+  .option("--format <format>", "Output format: text (default) or json")
   .action(async (action, name, options) => {
     const validActions = ["list", "enable", "disable", "detect"];
     if (!validActions.includes(action)) {
@@ -119,7 +120,7 @@ program
 
     if (action === "detect") {
       const { runSkillDetect } = await import("./modes/skill-detect.ts");
-      await runSkillDetect(name);
+      await runSkillDetect(name, options.format as "text" | "json");
       return;
     }
 
@@ -210,7 +211,7 @@ program
       process.exit(1);
     }
     const { runTemplateMode } = await import("./modes/template-mode.ts");
-    runTemplateMode({
+    await runTemplateMode({
       action: action as "list" | "search" | "render" | "export",
       platform: options.platform,
       category: options.category,

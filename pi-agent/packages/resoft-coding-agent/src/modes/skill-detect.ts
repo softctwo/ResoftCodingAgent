@@ -3,7 +3,7 @@ import type { SkillMeta } from "@resoft/agent-core";
 import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-export async function runSkillDetect(targetPath?: string) {
+export async function runSkillDetect(targetPath?: string, format: "text" | "json" = "text") {
   const projectRoot = targetPath ? resolve(targetPath) : process.cwd();
 
   if (!existsSync(projectRoot)) {
@@ -93,6 +93,28 @@ export async function runSkillDetect(targetPath?: string) {
       reason: `${(extCounts[".yml"] || 0) + (extCounts[".yaml"] || 0)} YAML files found`,
       confidence: "★★☆",
     });
+  }
+
+  // JSON output (non-interactive / CI-friendly)
+  if (format === "json") {
+    const communitySuggestions: string[] = [];
+    if (extCounts[".tsx"] || extCounts[".jsx"] || extCounts[".vue"]) communitySuggestions.push("vercel-skills");
+    const testFiles = files.filter(f => f.includes(".test.") || f.includes(".spec.") || f.includes("__tests__"));
+    if (testFiles.length > 0) communitySuggestions.push("superpowers");
+    if (files.filter(f => f.endsWith(".md")).length > 3) communitySuggestions.push("planning-files");
+    if (files.length > 100) communitySuggestions.push("context-engineering");
+
+    const output = {
+      projectRoot,
+      filesFound: files.length,
+      detectedPlatform: bestPlatform,
+      platformScores,
+      fileExtensions: extCounts,
+      recommendations,
+      communitySuggestions,
+    };
+    console.log(JSON.stringify(output, null, 2));
+    return;
   }
 
   // Display results

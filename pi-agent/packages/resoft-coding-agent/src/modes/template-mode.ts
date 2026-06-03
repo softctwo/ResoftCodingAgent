@@ -2,6 +2,7 @@ import { TemplateEngine, BUILTIN_TEMPLATES } from "@resoft/agent-core";
 import type { TemplateCodeTemplate } from "@resoft/agent-core";
 import type { ETLPlatform } from "@resoft/agent-core";
 import { writeFileSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 
 export interface TemplateModeConfig {
   action: "list" | "search" | "render" | "export";
@@ -14,7 +15,7 @@ export interface TemplateModeConfig {
   output?: string;
 }
 
-export function runTemplateMode(config: TemplateModeConfig) {
+export async function runTemplateMode(config: TemplateModeConfig) {
   const engine = new TemplateEngine();
   for (const t of BUILTIN_TEMPLATES) engine.register(t);
 
@@ -82,15 +83,25 @@ export function runTemplateMode(config: TemplateModeConfig) {
       const missing = tpl.variables.filter(
         (v) => v.required && !variables[v.name] && !v.defaultValue
       );
+
+      // For missing required vars, prompt interactively
       if (missing.length > 0) {
-        console.log(`\n⚠️  Template "${tpl.name}" requires these variables:\n`);
+        console.log(`\n⚠️  Template "${tpl.name}" needs these variables:\n`);
         for (const v of tpl.variables) {
           const marker = v.required ? "🔴 required" : "🟢 optional";
           const def = v.defaultValue ? ` (default: "${v.defaultValue}")` : "";
           console.log(`  ${v.name.padEnd(20)} ${marker.padEnd(15)} ${v.description}${def}`);
         }
-        console.log(`\n💡 Pass variables with: --vars '{"${missing[0].name}":"value"}'`);
-        process.exit(1);
+
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        for (const v of missing) {
+          const defVal = v.defaultValue || "";
+          const prompt = `\n  Enter ${v.name} [${defVal}]: `;
+          const answer = await rl.question(prompt);
+          variables[v.name] = answer.trim() || defVal || v.name;
+        }
+        rl.close();
+        console.log("\n");
       }
 
       // Render
