@@ -1,0 +1,59 @@
+name: naming-rules
+description: "Naming conventions for tables, columns, files, and code identifiers"
+rules:
+  - id: table-snake-case
+    description: "Table names must use snake_case, lowercase"
+    severity: error
+    suggestion: "Rename to snake_case: e.g., customer_orders not CustomerOrders."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: column-snake-case
+    description: "Column names must use snake_case, lowercase"
+    severity: warning
+    suggestion: "Use snake_case for all column names."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: no-chinese-name
+    description: "Do not use Chinese characters in table or column names"
+    severity: error
+    suggestion: "Use English descriptive names; add Chinese comments if needed."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: prefix-consistency
+    description: "Use consistent prefixes: stg_ for staging, int_ for intermediate, fct_ for facts, dim_ for dimensions"
+    severity: info
+    suggestion: "Follow the project's naming convention for model prefixes."
+    platforms:
+      - dbt
+
+  - id: file-naming
+    description: "ETL script files should match their primary output table name"
+    severity: info
+    suggestion: "Name files after their target table: e.g., fct_orders.sql."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: no-reserved-words
+    description: "Avoid SQL reserved words as table or column names"
+    severity: error
+    suggestion: "Do not use keywords like ORDER, GROUP, TABLE, SELECT as identifiers."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt

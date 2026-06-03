@@ -1,0 +1,39 @@
+# Resoft Skill Registry
+# Maps skill names to their file paths and metadata.
+# Paths are relative to the pi-agent/ directory.
+
+skills:
+  - name: resoft-sql
+    path: skills/sql/SKILL.md
+    enabled: true
+    platform: sql
+    auto_trigger: true
+    description: "SQL query writing, formatting, optimization, and ETL patterns"
+
+  - name: resoft-spark
+    path: skills/spark/SKILL.md
+    enabled: true
+    platform: spark
+    auto_trigger: true
+    description: "PySpark ETL jobs, Spark SQL, performance tuning, and batch processing"
+
+  - name: resoft-flink
+    path: skills/flink/SKILL.md
+    enabled: true
+    platform: flink
+    auto_trigger: true
+    description: "Flink SQL streaming pipelines, CDC, state management, and window operations"
+
+  - name: resoft-dbt
+    path: skills/dbt/SKILL.md
+    enabled: true
+    platform: dbt
+    auto_trigger: true
+    description: "dbt data modeling, Jinja patterns, testing, and analytics engineering"
+
+  - name: resoft-custom
+    path: skills/custom/SKILL.md
+    enabled: false
+    platform: custom
+    auto_trigger: false
+    description: "Template for creating custom team-specific skills"

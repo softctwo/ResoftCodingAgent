@@ -1,0 +1,12 @@
+{
+  "name": "resoft-coding-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "公司级 AI Coding Agent — Data ETL 开发场景，基于 pi agent 扩展",
+  "scripts": {
+    "build": "cd pi-agent && npm run build",
+    "test": "cd pi-agent && npm test",
+    "install": "cd pi-agent && npm install",
+    "resoft": "cd pi-agent && npx tsx packages/resoft-coding-agent/src/cli.ts"
+  }
+}

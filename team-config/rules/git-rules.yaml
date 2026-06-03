@@ -1,0 +1,43 @@
+name: git-rules
+description: "Git commit and branch conventions for data ETL projects"
+rules:
+  - id: commit-message-format
+    description: "Use conventional commit format: type(scope): description"
+    pattern: "^(feat|fix|refactor|perf|docs|test|chore)(\\(.+\\))?: .+"
+    severity: info
+    suggestion: "Format: feat(etl): add daily order aggregation job"
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: branch-naming
+    description: "Branch names should follow: feature/ETL-###-brief-description"
+    severity: info
+    suggestion: "Use: feature/ETL-1234-daily-order-agg or fix/ETL-5678-null-handling"
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: no-large-commit
+    description: "Keep commits focused; avoid commits that change more than 500 lines"
+    severity: info
+    suggestion: "Split large changes into logical commits."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: no-sensitive-data
+    description: "Never commit credentials, API keys, or connection strings"
+    severity: error
+    suggestion: "Use environment variables or secret management; add patterns to .gitignore."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt

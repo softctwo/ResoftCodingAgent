@@ -1,0 +1,100 @@
+name: sql-rules
+description: "SQL coding and formatting rules for all ETL SQL development"
+rules:
+  - id: keyword-case
+    description: "SQL keywords must be UPPERCASE"
+    pattern: "\\b(select|from|where|join|group|order|having|insert|update|delete|with|as|on|and|or|in|exists|between|like|is|null|not|case|when|then|else|end|union|all|distinct)\\b"
+    severity: warning
+    suggestion: "Use uppercase for all SQL keywords: SELECT, FROM, WHERE, etc."
+    platforms:
+      - sql
+      - dbt
+
+  - id: select-star
+    description: "Avoid SELECT * in production queries"
+    pattern: "\\bSELECT\\s+\\*"
+    severity: warning
+    suggestion: "Enumerate columns explicitly for clarity and to avoid schema-change breakage."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: implicit-join
+    description: "Use explicit JOIN syntax instead of comma-separated table lists"
+    pattern: "\\bFROM\\s+\\w+\\s*,\\s*\\w+"
+    severity: error
+    suggestion: "Use JOIN ... ON syntax for clarity and to prevent accidental cross joins."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: leading-comma
+    description: "Use leading comma style for cleaner diffs"
+    pattern: ",\\s*$"
+    severity: info
+    suggestion: "Place commas at the beginning of lines, not the end."
+    platforms:
+      - sql
+      - dbt
+
+  - id: indent-four
+    description: "Use 4-space indentation, not tabs"
+    pattern: "^\\t"
+    severity: info
+    suggestion: "Replace tabs with 4 spaces for consistent formatting."
+    platforms:
+      - sql
+      - dbt
+
+  - id: missing-alias
+    description: "Table aliases should be defined for all tables in multi-table queries"
+    pattern: "\\bJOIN\\s+\\w+\\s+ON\\b"
+    severity: info
+    suggestion: "Add a short, meaningful alias to every table."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: null-comparison
+    description: "Use IS NULL instead of = NULL or <> NULL"
+    pattern: "[=<>]\\s*NULL"
+    severity: error
+    suggestion: "Use IS NULL or IS NOT NULL for NULL comparisons."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt
+
+  - id: column-count-limit
+    description: "Keep SELECT column lists under 30 columns; refactor if needed"
+    severity: info
+    suggestion: "If a table has more than 30 relevant columns, consider splitting the query."
+    platforms:
+      - sql
+      - dbt
+
+  - id: cte-depth
+    description: "Limit CTE nesting to 3 levels for readability"
+    severity: info
+    suggestion: "Refactor deeply nested CTEs into intermediate models or break into multiple queries."
+    platforms:
+      - sql
+      - dbt
+
+  - id: date-string-comparison
+    description: "Avoid comparing date columns to string literals without explicit CAST"
+    pattern: "\\w+\\s*[=<>]\\s*'\\d{4}-\\d{2}-\\d{2}'"
+    severity: warning
+    suggestion: "Use DATE '2024-01-01' or CAST('2024-01-01' AS DATE) for date comparisons."
+    platforms:
+      - sql
+      - spark
+      - flink
+      - dbt

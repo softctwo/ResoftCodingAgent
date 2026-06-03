@@ -1,0 +1,58 @@
+name: spark-rules
+description: "PySpark / Spark SQL best practices and anti-patterns"
+rules:
+  - id: use-dataframe-api
+    description: "Prefer DataFrame API over RDD operations"
+    severity: warning
+    suggestion: "DataFrame operations benefit from Catalyst optimizer and Tungsten execution."
+    platforms:
+      - spark
+
+  - id: avoid-python-udf
+    description: "Prefer built-in functions over Python UDFs"
+    severity: warning
+    suggestion: "Python UDFs have high serialization overhead. Use built-in Spark SQL functions or Pandas UDFs."
+    platforms:
+      - spark
+
+  - id: cache-reuse
+    description: "Cache DataFrames used 3+ times, and unpersist when done"
+    severity: info
+    suggestion: "Use df.cache() for repeated use; call df.unpersist() in cleanup."
+    platforms:
+      - spark
+
+  - id: broadcast-small-table
+    description: "Broadcast tables smaller than 10 MB in JOIN operations"
+    severity: info
+    suggestion: "Use broadcast(small_df) for dimension tables to avoid shuffle."
+    platforms:
+      - spark
+
+  - id: partition-strategy
+    description: "Use appropriate partition strategy for output and shuffle"
+    severity: info
+    suggestion: "Set spark.sql.shuffle.partitions based on data volume and cluster size."
+    platforms:
+      - spark
+
+  - id: select-star-spark
+    description: "Avoid SELECT * in Spark SQL; it breaks on schema evolution"
+    severity: warning
+    suggestion: "List columns explicitly in Spark SQL queries."
+    platforms:
+      - spark
+
+  - id: unpersist-after-use
+    description: "Always unpersist cached DataFrames after use"
+    severity: info
+    suggestion: "Add df.unpersist() in finally blocks or after final action."
+    platforms:
+      - spark
+
+  - id: error-handling
+    description: "Add try/except blocks around Spark job entry points"
+    severity: warning
+    suggestion: "Catch exceptions, log errors, and clean up spark session."
+    platforms:
+      - spark

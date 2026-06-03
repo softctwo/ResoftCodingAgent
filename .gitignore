@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+packages/*/node_modules/
+
+# Build output
+dist/
+packages/*/dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+.zed/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+tui-debug.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Test / Coverage
+coverage/
+.nyc_output/
+.npm/
+
+# PilotDeck session data (do not commit)
+.omx/
+
+# Backup files
+docs_backup/
+packages_backup/
+team-config_backup/
+.pi_config/
+.pi/
+.opencode/
+*.cpuprofile
+out.jsonl
+syntax.jsonl
+pi-*.html
+out.html
+compaction-results/
+packages/coding-agent/binaries/
+plans/
+todo.md
+collect.sh
