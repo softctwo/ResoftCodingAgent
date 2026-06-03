@@ -53,6 +53,42 @@ program
     await main(config);
   });
 
+// ─── ci ────────────────────────────────────────────────────────────
+
+program
+  .command("ci")
+  .description("CI/CD pipeline mode — review files with exit codes")
+  .option("--files <files>", "Comma or space-separated list of files")
+  .option("-p, --platform <platform>", "Target platform", "sql")
+  .option("--format <format>", "Output format: text, json, sarif, checkstyle", "text")
+  .option("--min-severity <severity>", "Minimum severity: error, warning, info", "warning")
+  .option("--fail-on-error", "Exit with non-zero code on errors", true)
+  .option("--no-fail-on-error", "Exit 0 even on errors")
+  .option("--fail-on-warning", "Exit with non-zero code on warnings")
+  .option("--team-config <path>", "Path to team config directory")
+  .action(async (options) => {
+    const files = options.files
+      ? options.files.split(/[,\s]+/).filter(Boolean)
+      : [];
+
+    const { loadTeamConfig } = await import("./config/team-config.ts");
+    const teamConfig = await loadTeamConfig(options.teamConfig);
+    const allRules = teamConfig.rules.flatMap((rs) => rs.rules);
+
+    const { runCIMode } = await import("./modes/ci-mode.ts");
+    await runCIMode(
+      {
+        files,
+        platform: options.platform,
+        format: options.format,
+        minSeverity: options.minSeverity,
+        failOnError: options.failOnError,
+        failOnWarning: options.failOnWarning,
+      },
+      allRules,
+    );
+  });
+
 // ─── init ──────────────────────────────────────────────────────────
 
 program
@@ -96,6 +132,63 @@ program
       teamConfigPath: options.teamConfig,
     };
     await main(config);
+  });
+
+// ─── stats ─────────────────────────────────────────────────────────
+
+program
+  .command("stats <action>")
+  .description("Usage statistics: summary, daily, export, pricing")
+  .option("-d, --days <n>", "Number of days", "7")
+  .option("-o, --output <file>", "Output file for export")
+  .option("--data-dir <dir>", "Stats data directory")
+  .action(async (action, options) => {
+    const validActions = ["summary", "daily", "export", "pricing"];
+    if (!validActions.includes(action)) {
+      console.error(`Invalid action: "${action}". Use: ${validActions.join(", ")}`);
+      process.exit(1);
+    }
+    const { runStatsMode } = await import("./modes/stats-mode.ts");
+    runStatsMode({
+      action,
+      days: parseInt(options.days),
+      output: options.output,
+      dataDir: options.dataDir,
+    });
+  });
+
+// ─── dashboard ─────────────────────────────────────────────────────
+
+program
+  .command("dashboard")
+  .description("Start the team dashboard web server")
+  .option("-p, --port <port>", "Port to listen on", "3456")
+  .option("-h, --host <host>", "Host to bind", "127.0.0.1")
+  .option("--open", "Open in browser")
+  .option("--team-config <path>", "Path to team config directory")
+  .action(async (options) => {
+    const { DashboardServer } = await import("./dashboard/index.ts");
+
+    const server = new DashboardServer({
+      port: parseInt(options.port),
+      host: options.host,
+    });
+
+    await server.start();
+
+    if (options.open) {
+      const { exec } = await import("node:child_process");
+      const url = `http://${options.host}:${options.port}`;
+      const cmd =
+        process.platform === "darwin"
+          ? `open "${url}"`
+          : process.platform === "win32"
+            ? `start "" "${url}"`
+            : `xdg-open "${url}"`;
+      exec(cmd);
+    }
+
+    console.log("Press Ctrl+C to stop.");
   });
 
 // ─── template ───────────────────────────────────────────────────────

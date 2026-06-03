@@ -21,6 +21,10 @@ export { AutoSkillTrigger, SkillRegistry } from "./skills/index.ts";
 export type { TriggerResult } from "./skills/index.ts";
 export { TemplateEngine, BUILTIN_TEMPLATES } from "./templates/index.ts";
 export type { CodeTemplate as TemplateCodeTemplate } from "./templates/index.ts";
+export { CIReporter } from "./pipeline/index.ts";
+export type { CIReportResult } from "./pipeline/index.ts";
+export { TokenCounter, CostCalculator, DEFAULT_PRICING } from "./stats/index.ts";
+export type { TokenUsage, ModelPricing } from "./stats/index.ts";
 export type {
   ETLPlatform,
   IssueSeverity,

@@ -12,7 +12,9 @@
     "./context": "./dist/context/index.js",
     "./rules": "./dist/rules/index.js",
     "./skills": "./dist/skills/index.js",
-    "./templates": "./dist/templates/index.js"
+    "./templates": "./dist/templates/index.js",
+    "./pipeline": "./dist/pipeline/index.js",
+    "./stats": "./dist/stats/index.js"
   },
   "scripts": {
     "build": "tsgo -p tsconfig.build.json",
