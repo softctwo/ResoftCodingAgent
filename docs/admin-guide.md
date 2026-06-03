@@ -215,6 +215,8 @@ rules:
 
 ### 3.1 skills.yaml 注册表格式
 
+ResoftCodingAgent v1.0.0 内置 **15 个 Skill**：4 个核心 ETL Skill、10 个社区贡献 Skill 以及 superpowers/superclaude 等高级 Skill。
+
 ```yaml
 # team-config/skills.yaml
 version: "1.0"
@@ -511,15 +513,145 @@ echo ".env" >> .gitignore
 
 ---
 
-## 6. 用量统计（未来规划）
+## 6. 用量统计
 
-> **当前版本 (v0.1.0)**: 用量统计功能规划中，预计 v0.3.0 提供。
+ResoftCodingAgent v1.0.0 提供内置的用量统计功能，数据自动记录在 `~/.resoft/stats/usage.json`。
 
-规划功能：
+### 6.1 查看用量
 
-- **Token 消耗仪表盘** — 按团队/用户/日期的 Token 用量统计
-- **Skill 使用热力图** — 各 Skill 的使用频率和场景分布
-- **审查覆盖率** — 代码审查执行率与问题修复率
-- **成本分析** — 按模型、按团队的 API 费用统计
+```bash
+# 用量总览（默认 7 天）
+resoft stats summary
 
-临时方案：可通过 `~/.pi/logs/` 中的 JSONL 日志手工统计。
+# 指定天数
+resoft stats summary --days 30
+
+# 逐日明细
+resoft stats daily
+
+# 模型价格对比
+resoft stats pricing
+
+# 导出数据
+resoft stats export --output team-usage.json
+```
+
+### 6.2 成本分析
+
+系统自动按模型价格计算每次调用的成本。支持的模型及价格：
+
+| 模型 | 输入（$ / 1K tokens） | 输出（$ / 1K tokens） |
+|------|----------------------|----------------------|
+| deepseek-v4-pro | $0.001 | $0.002 |
+| deepseek-chat | $0.00014 | $0.00028 |
+| claude-sonnet-4 | $0.003 | $0.015 |
+| claude-opus-4 | $0.015 | $0.075 |
+| gpt-4o | $0.0025 | $0.01 |
+| gpt-4o-mini | $0.00015 | $0.0006 |
+
+### 6.3 数据存储
+
+```
+~/.resoft/stats/
+└── usage.json        # JSONL 格式，每次调用追加一行
+```
+
+管理员可定期导出并分析团队使用模式，优化模型选择和成本。
+
+---
+
+## 7. Pipeline 配置（v1.0）
+
+### 7.1 GitHub Actions 配置
+
+启用或禁用 PR 自动审查：
+
+```bash
+# 启用 GitHub Actions
+cp .github/workflows/resoft-review.yml.example .github/workflows/resoft-review.yml
+
+# 配置 API Key Secret
+# 在 GitHub 仓库 → Settings → Secrets and variables → Actions
+# 添加 ANTHROPIC_API_KEY
+```
+
+工作流触发器：
+- `pull_request`：PR 提交时自动运行
+- `push`（可选）：推送到主分支时运行全量审查
+
+### 7.2 Pre-commit 钩子配置
+
+```bash
+# 安装
+ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
+
+# 临时禁用
+git commit --no-verify -m "skip review"
+
+# 永久禁用（删除符号链接）
+rm .git/hooks/pre-commit
+```
+
+钩子行为：提交前自动对变更文件运行 `resoft ci`，发现 error 时阻止提交。
+
+### 7.3 CI 格式选择建议
+
+| 场景 | 推荐格式 |
+|------|----------|
+| GitHub Code Scanning | `sarif` |
+| GitLab CI | `checkstyle` |
+| Jenkins | `checkstyle` |
+| 命令行 / 日志 | `text` 或 `json` |
+
+---
+
+## 8. Dashboard 管理（v1.0）
+
+### 8.1 启动与端口配置
+
+```bash
+# 默认端口 3456
+resoft dashboard
+
+# 自定义端口
+resoft dashboard --port 8080
+
+# 允许局域网访问
+resoft dashboard --host 0.0.0.0
+```
+
+Dashboard 是零依赖 Node.js 内置 http 模块实现的 Web 面板，无需额外安装。
+
+### 8.2 访问控制
+
+Dashboard 默认监听 `127.0.0.1`，仅本地可访问。如需团队共享：
+
+```bash
+# 仅局域网
+resoft dashboard --host 0.0.0.0 --port 3456
+
+# 建议配合反向代理添加认证（nginx 示例）：
+# location /dashboard/ {
+#     proxy_pass http://127.0.0.1:3456/;
+#     auth_basic "Resoft Dashboard";
+#     auth_basic_user_file /etc/nginx/.htpasswd;
+# }
+```
+
+### 8.3 API 调用记录
+
+Skill 运行时可通过 `POST /api/record` 自动上报使用记录，数据用于 Dashboard 统计展示。
+
+```bash
+curl -X POST http://127.0.0.1:3456/api/record \
+  -H "Content-Type: application/json" \
+  -d '{"skill":"spark-etl","model":"claude-sonnet-4","tokens":{"input":1500,"output":800}}'
+```
+
+---
+
+## 9. Skill 注册表（更新至 v1.0.0）
+
+---
+
+## 7. Pipeline 配置（v1.0）

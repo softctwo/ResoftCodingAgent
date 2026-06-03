@@ -118,9 +118,12 @@ cd pi-agent
 
 ```bash
 npm install
+
+# 编译 TypeScript
+npm run build
 ```
 
-安装过程会自动执行 `postinstall` 脚本，完成：
+安装与编译过程会自动完成：
 - TypeScript 编译
 - Skill 脚本依赖检查
 - 默认配置文件生成
@@ -195,6 +198,18 @@ npm run resoft -- chat -p "你好，请帮我写一个 Spark WordCount 程序"
 # 4. 运行代码审查测试
 echo "SELECT * FROM users WHERE id = 1" > /tmp/test.sql
 npm run resoft -- review /tmp/test.sql
+
+# 5. 运行 CI 模式测试（v1.0）
+npm run resoft -- ci --files /tmp/test.sql --no-fail-on-error
+
+# 6. 查看用量统计（v1.0）
+npm run resoft -- stats summary
+
+# 7. 启动 Dashboard（v1.0）
+npm run resoft -- dashboard
+
+# 8. 安装 pre-commit 钩子（可选，v1.0）
+ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
 ```
 
 ---
@@ -340,6 +355,13 @@ pi-agent/
 │   ├── dbt-etl/
 │   └── sql-etl/
 ├── src/                     # TypeScript 源码
+│   ├── pipeline/            # CI/CD 流水线集成模块（v1.0）
+│   ├── stats/               # 用量统计模块（v1.0）
+│   └── dashboard/           # 团队 Dashboard 模块（v1.0）
+├── scripts/                 # 辅助脚本
+│   └── pre-commit.sh        # Git pre-commit 钩子（v1.0）
+├── .github/workflows/       # GitHub Actions 工作流（v1.0）
+│   └── resoft-review.yml
 ├── team-config/             # 团队配置模板
 ├── package.json
 ├── tsconfig.json

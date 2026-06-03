@@ -327,6 +327,104 @@ grep "total_tokens" ~/.pi/logs/api-calls-*.jsonl | jq .usage.total_tokens
 
 ---
 
+## CI/CD 类（v1.0）
+
+### Q21: 如何配置自动化 PR 审查？
+
+使用 GitHub Actions 工作流 `.github/workflows/resoft-review.yml`：
+
+```yaml
+name: Resoft Code Review
+on: [pull_request]
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci && npm run build
+      - env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npx resoft ci --files "src/**/*.{py,sql}" --format sarif
+```
+
+在仓库 Settings → Secrets 中添加 `ANTHROPIC_API_KEY` 即可。
+
+---
+
+### Q22: 使用统计数据存储在哪里？
+
+在 `~/.resoft/stats/usage.json`。每次 Agent 调用或 Skill 执行后自动追加一条 JSON 记录（JSONL 格式）。
+
+```bash
+# 查看最近 10 条记录
+tail -10 ~/.resoft/stats/usage.json | jq .
+```
+
+---
+
+### Q23: 如何更改 Dashboard 端口？
+
+```bash
+# 方法 1：启动时指定
+resoft dashboard --port 8080
+
+# 方法 2：如果端口已被占用，换一个
+resoft dashboard --port 3457
+```
+
+默认端口是 3456。如果端口被占用，Dashboard 会报错并退出。
+
+---
+
+### Q24: Token 是如何计算的？
+
+ResoftCodingAgent 使用模型的实际 API 返回的 `usage` 字段统计 Token 消耗。对于不返回精确 Token 数的模型（如部分自定义端点），系统使用字符估算：约 4 字符 = 1 token。
+
+成本计算基于表格中的模型价格：
+- deepseek-v4-pro: $0.001 / 1K 输入, $0.002 / 1K 输出
+- claude-sonnet-4: $0.003 / 1K 输入, $0.015 / 1K 输出
+- gpt-4o: $0.0025 / 1K 输入, $0.01 / 1K 输出
+
+---
+
+### Q25: 如何临时禁用 pre-commit 钩子？
+
+```bash
+# 方法 1：跳过钩子（单次）
+git commit --no-verify -m "WIP"
+
+# 方法 2：暂时移除（永久）
+rm .git/hooks/pre-commit
+
+# 方法 3：重新启用
+ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
+```
+
+---
+
+### Q26: 如何集成 Jenkins / GitLab CI？
+
+**Jenkins**：使用 `--format checkstyle` 输出，配合 Checkstyle 或 Warnings NG 插件：
+
+```bash
+npx resoft ci --files "src/**/*.py" --format checkstyle \
+  --output resoft-review.xml
+```
+
+**GitLab CI**：在 `.gitlab-ci.yml` 中：
+
+```yaml
+resoft-review:
+  image: node:22
+  script:
+    - npm ci && npm run build
+    - npx resoft ci --files "src/**/*.sql" --format checkstyle > gl-code-quality-report.json
+```
+
+---
+
 ## 故障类
 
 ### Q18: Agent 不响应了？

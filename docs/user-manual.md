@@ -10,9 +10,12 @@ ResoftCodingAgent 是一款面向数据工程团队的 **AI 驱动的 ETL 开发
 |------|------|
 | 智能代码生成 | 根据自然语言描述生成 Spark/Flink/dbt/SQL ETL 脚本 |
 | 代码审查 | 基于团队编码规范自动审查 ETL 代码，输出分级 Issues |
+| CI/CD 流水线 | 原生集成 GitHub Actions / GitLab CI / Jenkins，多种报告格式 |
 | 项目初始化 | 快速生成标准化 ETL 项目脚手架 |
 | Skill 系统 | 可插拔的平台技能，支持团队自定义扩展 |
 | 团队配置共享 | 通过 Git 共享审查规则、命名规范、Skill 注册表 |
+| 用���统计 | Token 消耗追踪、成本分析、模型价格对比（v1.0） |
+| 团队 Dashboard | 内置 Web 面板，可视化展示团队使用情况（v1.0） |
 
 ### 适用场景
 
@@ -108,7 +111,7 @@ resoft chat [选项]
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ ResoftCodingAgent v0.1.0 - ETL 开发模式          │
+│ ResoftCodingAgent v1.0.0 - ETL 开发模式          │
 │ 当前平台: auto  |  模型: claude-sonnet-4         │
 │ 输入 !help 查看更多命令                           │
 └─────────────────────────────────────────────────┘
@@ -498,7 +501,271 @@ Agent 生成的代码块使用语言标记：
 
 ---
 
-## 8. 限制与注意事项
+## 8. CI/CD 流水线模式（v1.0）
+
+### 8.1 `resoft ci` — 自动化代码审查
+
+CI 模式专为 CI/CD 流水线设计，将代码审查结果以标准格式输出，适配主流 CI 平台。
+
+```
+resoft ci [选项]
+
+选项：
+  --files <glob>          审查文件（支持 glob 模式），必填
+  --format <name>         输出格式：text|json|sarif|checkstyle（默认 text）
+  --min-severity <level>  最低问题级别：error|warning|info|suggestion（默认 warning）
+  --fail-on-error         发现 error 时返回非零退出码（默认启用）
+  --fail-on-warning       发现 warning 时返回非零退出码
+  --no-fail-on-error      即使发现 error 也不返回非零退出码
+```
+
+### 8.2 输出格式
+
+| 格式 | 适用平台 | 说明 |
+|------|----------|------|
+| `text` | 通用 / 终端 | 人类可读的彩色文本报告 |
+| `json` | 通用 | 结构化 JSON，适合脚本解析 |
+| `sarif` | GitHub Code Scanning | SARIF 标准格式 |
+| `checkstyle` | Jenkins / GitLab | Checkstyle XML 格式 |
+
+### 8.3 CI/CD 集成示例
+
+**GitHub Actions**（`.github/workflows/resoft-review.yml`）：
+
+```yaml
+name: Resoft Code Review
+on: [pull_request]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm run build
+      - name: Run Resoft CI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run resoft -- ci \
+            --files "src/etl/**/*.{py,sql}" \
+            --format sarif \
+            --fail-on-error
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: resoft-review.sarif
+```
+
+**GitLab CI**（`.gitlab-ci.yml`）：
+
+```yaml
+resoft-review:
+  image: node:22
+  script:
+    - npm ci && npm run build
+    - npx resoft ci --files "src/**/*.sql" --format checkstyle > resoft-review.xml
+  artifacts:
+    reports:
+      codequality: resoft-review.xml
+```
+
+**Jenkins Pipeline**：
+
+```groovy
+stage('Resoft Review') {
+    steps {
+        sh '''
+            npm ci && npm run build
+            npx resoft ci --files "src/**/*.py" --format checkstyle \
+                --output resoft-review.xml --fail-on-error
+        '''
+        recordIssues(tools: [checkStyle(pattern: 'resoft-review.xml')])
+    }
+}
+```
+
+### 8.4 Pre-commit 钩子
+
+在提交前自动审查变更文件：
+
+```bash
+# 安装钩子
+ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
+
+# 跳过钩子（临时）
+git commit --no-verify -m "WIP"
+```
+
+### 8.5 CI 模式退出码
+
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 无问题或低于 `--min-severity` |
+| 1 | 发现 error 级别问题（`--fail-on-error`） |
+| 2 | 发现 warning 级别问题（`--fail-on-warning`） |
+| 3 | 工具异常 |
+
+---
+
+## 9. 团队 Dashboard（v1.0）
+
+### 9.1 `resoft dashboard` — 启动 Web 面板
+
+Dashboard 是内置的零依赖 Web 应用，无需安装任何外部包，基于 Node.js 内置 http 模块。
+
+```
+resoft dashboard [选项]
+
+选项：
+  --port <number>       端口号（默认 3456）
+  --host <string>       监听地址（默认 127.0.0.1）
+```
+
+### 9.2 启动与访问
+
+```bash
+# 默认配置启动
+resoft dashboard
+
+# 指定端口
+resoft dashboard --port 8080
+
+# 允许局域网访问
+resoft dashboard --host 0.0.0.0 --port 3456
+```
+
+启动后访问 `http://127.0.0.1:3456` 即可看到 Dashboard。
+
+### 9.3 四个页面
+
+| 页面 | 路径 | 内容 |
+|------|------|------|
+| **Overview** | `/` | 团队概况：活跃用户数、今日审查次数、Token 总消耗、当前成本 |
+| **Issues** | `/issues` | 问题分布：按严重级别、按平台、按规则分类的统计图表 |
+| **Usage** | `/usage` | 用量趋势：Token 消耗曲线、每日调用量、Skill 使用频率 |
+| **Team** | `/team` | 成员统计：每人贡献的审查数、活跃度排名、Skill 偏好 |
+
+### 9.4 REST API
+
+Dashboard 同时提供 REST API，支持自动化集成：
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| `GET` | `/api/summary` | 团队摘要（用户数、审查数、Token 消耗） |
+| `GET` | `/api/issues` | 问题列表（支持 `?severity=error` 过滤） |
+| `GET` | `/api/usage` | 用量数据（支持 `?days=30`） |
+| `GET` | `/api/team` | 成员统计 |
+| `POST` | `/api/record` | 记录一次使用（Skill 调用时自动上报） |
+
+#### POST /api/record 示例
+
+```json
+{
+  "skill": "spark-etl",
+  "model": "claude-sonnet-4",
+  "tokens": { "input": 1500, "output": 800 },
+  "files": ["src/etl/orders.py"]
+}
+```
+
+---
+
+## 10. 用量统计（v1.0）
+
+### 10.1 `resoft stats` — 查看使用数据
+
+```
+resoft stats <action> [选项]
+
+action:
+  summary     用量总览（默认）
+  daily       逐日统计
+  pricing     各模型价格对比
+  export      导出为 JSON
+
+选项：
+  --days <n>         统计天数（默认 7）
+  --output <path>    导出文件路径（仅 export）
+```
+
+### 10.2 子命令说明
+
+**summary — 用量总览**
+
+```bash
+resoft stats summary
+# 输出示例：
+# ┌──────────────────┬──────────┐
+# │ 总调用次数        │ 342      │
+# │ 总 Token 输入     │ 1,280,000│
+# │ 总 Token 输出     │ 450,000  │
+# │ 预估总成本        │ $4.35    │
+# │ 月度预估成本      │ $18.60   │
+# │ 最常用 Skill      │ spark-etl│
+# └──────────────────┴──────────┘
+```
+
+**daily — 逐日统计**
+
+```bash
+resoft stats daily --days 30
+# 输出逐日调用量、Token 消耗、成本曲线
+```
+
+**pricing — 模型价格对比**
+
+```bash
+resoft stats pricing
+# 列出各模型在团队中的使用量与成本：
+# ┌────────────────────┬──────┬─────────┬──────────┐
+# │ 模型                │ 调用  │ Token   │ 成本     │
+# ├────────────────────┼──────┼─────────┼──────────┤
+# │ deepseek-v4-pro    │ 120  │ 500K    │ $0.75    │
+# │ claude-sonnet-4    │ 200  │ 1.2M    │ $2.40    │
+# │ gpt-4o             │ 22   │ 80K     │ $0.20    │
+# └────────────────────┴──────┴─────────┴──────────┘
+```
+
+**export — 导出数据**
+
+```bash
+resoft stats export --output stats-2025-06.json
+```
+
+### 10.3 支持的模型价格
+
+| 模型 | 输入价格（$ / 1K tokens） | 输出价格（$ / 1K tokens） |
+|------|--------------------------|--------------------------|
+| deepseek-v4-pro | $0.001 | $0.002 |
+| deepseek-chat | $0.00014 | $0.00028 |
+| claude-sonnet-4 | $0.003 | $0.015 |
+| claude-opus-4 | $0.015 | $0.075 |
+| gpt-4o | $0.0025 | $0.01 |
+| gpt-4o-mini | $0.00015 | $0.0006 |
+
+### 10.4 数据存储
+
+统计数据存储在 `~/.resoft/stats/usage.json`，每次 Agent 调用后自动追加记录。数据结构：
+
+```json
+{
+  "timestamp": "2025-06-01T14:30:00Z",
+  "user": "zhangsan",
+  "skill": "spark-etl",
+  "model": "claude-sonnet-4",
+  "tokens": { "input": 1500, "output": 800 },
+  "cost": { "input": 0.0045, "output": 0.012, "total": 0.0165 },
+  "files": ["src/etl/orders.py"],
+  "issues": 3
+}
+```
+
+---
+
+## 11. 限制与注意事项
 
 1. **LLM 生成的不确定性** — 同样 Prompt 可能产生不同输出，建议审查后使用
 2. **敏感信息** — 避免在 Prompt 中包含真实密码、Token、隐私数据

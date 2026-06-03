@@ -16,6 +16,7 @@ cd pi-agent
 
 # 安装依赖
 npm install
+npm run build
 ```
 
 > 遇到网络问题？使用国内镜像：`npm install --registry=https://registry.npmmirror.com`
@@ -47,7 +48,7 @@ npm run resoft -- chat
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ ResoftCodingAgent v0.1.0 - ETL 开发模式          │
+│ ResoftCodingAgent v1.0.0 - ETL 开发模式          │
 │ 当前平台: auto  |  模型: claude-sonnet-4         │
 │ 输入 !help 查看更多命令                           │
 └─────────────────────────────────────────────────┘
@@ -130,6 +131,24 @@ npm run resoft -- review /tmp/wordcount.py
 
 ---
 
+## Step 6: v1.0 新功能速览（60 秒）
+
+```bash
+# CI 模式：自动化代码审查（适用于 CI/CD 流水线）
+resoft ci --files "orders.sql" --format json
+
+# 统计总览：查看 Token 用量和成本
+resoft stats summary
+
+# 模型价格对比
+resoft stats pricing
+
+# 启动 Dashboard（团队可视化面板）
+resoft dashboard --port 3456
+```
+
+---
+
 ## 下一步指引
 
 | 我想…… | 请阅读 |
@@ -163,4 +182,10 @@ resoft skill enable spark-etl       # 启用 Spark Skill
 !review     →  审查上次代码
 Ctrl+C      →  中断
 Ctrl+D      →  退出
+
+# v1.0 新命令
+resoft ci --files "*.sql" --format json     # CI 流水线审查
+resoft stats summary                        # Token 用量总览
+resoft stats pricing                        # 模型价格对比
+resoft dashboard                            # 启动团队 Dashboard
 ```

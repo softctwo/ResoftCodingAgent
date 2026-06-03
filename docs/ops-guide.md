@@ -188,6 +188,7 @@ resoft session kill <session-id>
 | 错误日志 | `~/.pi/logs/errors-YYYY-MM-DD.jsonl` | 错误和异常 |
 | API 调用日志 | `~/.pi/logs/api-calls-YYYY-MM-DD.jsonl` | LLM API 调用详情 |
 | 调试日志 | `~/.pi/logs/debug.log` | 详细调试信息 |
+| 用量数据 | `~/.resoft/stats/usage.json` | Token/成本统计数据（v1.0） |
 
 ### 5.2 日志轮转配置
 
@@ -230,7 +231,134 @@ grep '"skill":"spark-etl"' ~/.pi/logs/conversations-*.jsonl
 
 ---
 
-## 6. 故障排查
+## 6. Dashboard 服务管理（v1.0）
+
+### 6.1 启动与停止
+
+```bash
+# 启动（前台）
+resoft dashboard --port 3456
+
+# 后台运行
+nohup resoft dashboard --port 3456 > /var/log/resoft-dashboard.log 2>&1 &
+
+# 停止
+pkill -f "resoft dashboard"
+```
+
+### 6.2 进程监控
+
+```bash
+# 检查 Dashboard 进程
+ps aux | grep "resoft dashboard"
+
+# 检查端口占用
+lsof -i :3456
+
+# 健康检查
+curl -s http://127.0.0.1:3456/api/summary | jq .
+```
+
+### 6.3 端口冲突
+
+```bash
+# 如果 3456 端口被占用，更换端口
+resoft dashboard --port 3457
+
+# 查找占用进程
+lsof -i :3456
+```
+
+### 6.4 持久化部署（systemd 示例）
+
+```ini
+# /etc/systemd/system/resoft-dashboard.service
+[Unit]
+Description=Resoft Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=resoft
+WorkingDirectory=/opt/pi-agent
+ExecStart=/usr/bin/node packages/resoft-coding-agent/dist/dashboard/server.js --port 3456
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now resoft-dashboard
+```
+
+---
+
+## 7. 用量数据管理（v1.0）
+
+### 7.1 数据位置
+
+```
+~/.resoft/stats/
+└── usage.json        # JSONL 格式，每次调用追加一行
+```
+
+### 7.2 备份
+
+```bash
+# 定期备份
+cp ~/.resoft/stats/usage.json /backup/resoft-usage-$(date +%Y%m%d).json
+
+# 或者通过 export 导出
+resoft stats export --output /backup/resoft-usage-$(date +%Y%m%d).json
+```
+
+### 7.3 清理/归档
+
+```bash
+# 归档 90 天前的数据
+# (通过 jq 过滤并写入新文件，保留最近 90 天)
+jq 'select(.timestamp >= "'$(date -d '90 days ago' +%Y-%m-%d)'")' \
+  ~/.resoft/stats/usage.json > /tmp/usage-recent.json
+mv /tmp/usage-recent.json ~/.resoft/stats/usage.json
+```
+
+---
+
+## 8. CI 流水线故障排查（v1.0）
+
+### 8.1 GitHub Actions 常见错误
+
+| 错误 | 原因 | 解决方案 |
+|------|------|----------|
+| `ANTHROPIC_API_KEY not set` | Secret 未配置 | 在仓库 Settings → Secrets 中添加 |
+| `resoft: command not found` | 依赖未安装 | 确保 workflow 包含 `npm ci && npm run build` |
+| 审查超时 | 审查文件过多或过大 | 减少 `--files` 范围，添加 `--max-issues` |
+| SARIF 上传失败 | 输出格式不匹配 | 确保使用 `--format sarif` |
+
+### 8.2 Pre-commit 钩子冲突
+
+```bash
+# 如果钩子与 husky 等冲突，临时禁用
+git commit --no-verify -m "..."
+# 或永久删除
+rm .git/hooks/pre-commit
+```
+
+### 8.3 CI 退出码诊断
+
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 无问题或低于 `--min-severity` |
+| 1 | 发现 error 级别问题 |
+| 2 | 发现 warning 级别问题（`--fail-on-warning`） |
+| 3 | 工具异常 |
+
+---
+
+## 9. 故障排查
 
 ### 6.1 Agent 无响应
 
@@ -291,7 +419,7 @@ resoft skill disable custom-skill
 
 ---
 
-## 7. 升级指南
+## 10. 升级指南
 
 ### 7.1 pi-agent 版本升级
 
@@ -351,7 +479,7 @@ git reset --hard <last-stable-commit>
 
 ---
 
-## 8. 监控检查清单
+## 11. 监控检查清单
 
 ```bash
 #!/bin/bash
@@ -360,27 +488,35 @@ git reset --hard <last-stable-commit>
 echo "=== ResoftCodingAgent 健康检查 ==="
 
 # 1. 进程检查
-echo "[1/6] 检查 Node.js 进程..."
+echo "[1/8] 检查 Node.js 进程..."
 pgrep -f "pi-agent" > /dev/null && echo "  ✓ 运行中" || echo "  ✗ 未运行"
 
-# 2. API Key 检查
-echo "[2/6] 检查 API Key..."
+# 2. Dashboard 检查（v1.0）
+echo "[2/8] 检查 Dashboard..."
+curl -s http://127.0.0.1:3456/api/summary > /dev/null 2>&1 && echo "  ✓ 正常" || echo "  - 未启动"
+
+# 3. API Key 检查
+echo "[3/8] 检查 API Key..."
 [ -n "$ANTHROPIC_API_KEY" ] && echo "  ✓ 已配置" || echo "  ✗ 未配置"
 
-# 3. 磁盘空间
-echo "[3/6] 检查磁盘空间..."
+# 4. 磁盘空间
+echo "[4/8] 检查磁盘空间..."
 df -h ~/.pi/ | awk 'NR==2{print "  " $4 " 可用"}'
 
-# 4. Skill 检查
-echo "[4/6] 检查 Skill..."
+# 5. Skill 检查
+echo "[5/8] 检查 Skill..."
 npm run resoft -- skill list 2>/dev/null | grep "✗" && echo "  ✗ 有 Skill 异常" || echo "  ✓ 正常"
 
-# 5. 日志增长
-echo "[5/6] 日志大小..."
+# 6. 日志大小
+echo "[6/8] 日志大小..."
 du -sh ~/.pi/logs/ 2>/dev/null || echo "  无日志"
 
-# 6. Git 版本
-echo "[6/6] 版本信息..."
+# 7. 用量数据大小（v1.0）
+echo "[7/8] 用量数据..."
+du -sh ~/.resoft/stats/ 2>/dev/null || echo "  无数据"
+
+# 8. Git 版本
+echo "[8/8] 版本信息..."
 npm run resoft -- --version 2>/dev/null
 
 echo "=== 检查完成 ==="
