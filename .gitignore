@@ -66,3 +66,10 @@ pi-agent/packages/**/src/**/*.js
 pi-agent/packages/**/src/**/*.js.map
 pi-agent/packages/**/src/**/*.d.ts
 pi-agent/packages/**/src/**/*.d.ts.map
+
+# Pi vendor files (must be tracked)
+!pi-agent/packages/coding-agent/src/core/export-html/template.js
+!pi-agent/packages/coding-agent/src/core/export-html/vendor/
+!pi-agent/packages/coding-agent/src/core/export-html/vendor/highlight.min.js
+!pi-agent/packages/coding-agent/src/core/export-html/vendor/marked.min.js
+!pi-agent/packages/coding-agent/src/utils/highlight-js-lib-index.d.ts
