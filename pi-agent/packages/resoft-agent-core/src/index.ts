@@ -7,7 +7,11 @@ export {
   createSqlReviewHook,
   createSecurityCheckHook,
   createFormatCheckHook,
+  createDbtRefCheckHook,
+  createFlinkCheckpointHook,
+  createDefaultHooks,
 } from "./hooks/index.ts";
+export type { HooksCollection } from "./hooks/index.ts";
 export {
   PLATFORM_SYSTEM_PROMPTS,
   createETLContextTransform,
@@ -43,3 +47,4 @@ export type {
   ETLProjectContext,
   CLIConfig,
 } from "./types.ts";
+export { Logger, logger } from "./utils/index.ts";

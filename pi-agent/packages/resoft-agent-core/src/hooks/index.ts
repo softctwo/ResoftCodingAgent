@@ -6,7 +6,105 @@ import type {
   AfterToolCallContext,
   AfterToolCallResult,
   CodingRule,
+  ETLPlatform,
 } from "../types.ts";
+
+// ─── dbt Reference Check (after hook) ──────────────────────────────
+
+export function createDbtRefCheckHook(_projectRoot?: string): AfterToolCallHook {
+  return async (ctx: AfterToolCallContext): Promise<AfterToolCallResult> => {
+    const messages: string[] = [];
+    const refPattern = /\{\{\s*ref\s*\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}/g;
+    const configPattern = /\{\{\s*config\s*\([^)]*materialized\s*=\s*['\"]([^'\"]+)['\"][^)]*\)\s*\}\}/gi;
+
+    const checkContent = (text: string) => {
+      let match;
+      while ((match = refPattern.exec(text)) !== null) {
+        const modelName = match[1];
+        if (!/^[a-z][a-z0-9_]*$/.test(modelName)) {
+          messages.push(`dbt ref "${modelName}": model names should be snake_case`);
+        }
+        if (modelName.length > 50) {
+          messages.push(`dbt ref "${modelName}": model name too long`);
+        }
+      }
+    };
+
+    const content = ctx.result.content ?? "";
+    checkContent(content);
+
+    const validMaterializations = ["table", "view", "incremental", "ephemeral", "snapshot"];
+    let match;
+    while ((match = configPattern.exec(content)) !== null) {
+      if (!validMaterializations.includes(match[1].toLowerCase())) {
+        messages.push(`dbt config: unknown materialization "${match[1]}"`);
+      }
+    }
+
+    return messages.length > 0 ? { details: messages.join("\n") } : {};
+  };
+}
+
+// ─── Flink Checkpoint Hook (after hook) ────────────────────────────
+
+export function createFlinkCheckpointHook(): AfterToolCallHook {
+  return async (ctx: AfterToolCallContext): Promise<AfterToolCallResult> => {
+    const messages: string[] = [];
+    const content = ctx.result.content ?? "";
+
+    if (/CREATE\s+TABLE\s+/i.test(content) && !/checkpoint/i.test(content)) {
+      messages.push("Flink: CREATE TABLE detected but no checkpoint config found");
+    }
+    const hasStreaming = /STREAM\s+TABLE|streaming\b|TableEnvironment|StreamExecutionEnvironment/gi.test(content);
+    const hasWatermark = /watermark|WATERMARK\s+FOR/gi.test(content);
+    if (hasStreaming && !hasWatermark) {
+      messages.push("Flink: streaming detected but no watermark defined");
+    }
+    const hasCDC = /cdc|debezium|canal/gi.test(content);
+    if (hasCDC && !/checkpoint/i.test(content)) {
+      messages.push("Flink CDC: checkpoint configuration is required for fault tolerance");
+    }
+
+    return messages.length > 0 ? { details: messages.join("\n") } : {};
+  };
+}
+
+export interface HooksCollection {
+  sqlReview?: boolean;
+  securityCheck?: boolean;
+  formatCheck?: boolean;
+  dbtRefCheck?: boolean;
+  flinkCheckpoint?: boolean;
+}
+
+export function createDefaultHooks(
+  hooks: HooksCollection,
+  platform: ETLPlatform,
+  sqlRules: CodingRule[],
+  securityRules: CodingRule[],
+  formatRules: CodingRule[],
+): { before: BeforeToolCallHook[]; after: AfterToolCallHook[] } {
+  const before: BeforeToolCallHook[] = [];
+  const after: AfterToolCallHook[] = [];
+
+  if (hooks.securityCheck !== false) {
+    before.push(createSecurityCheckHook(securityRules));
+  }
+  if (hooks.sqlReview !== false) {
+    after.push(createSqlReviewHook(sqlRules));
+  }
+  if (hooks.formatCheck !== false) {
+    after.push(createFormatCheckHook(formatRules));
+  }
+  if (hooks.dbtRefCheck !== false && platform === "dbt") {
+    after.push(createDbtRefCheckHook());
+  }
+  if (hooks.flinkCheckpoint !== false && platform === "flink") {
+    after.push(createFlinkCheckpointHook());
+  }
+
+  return { before, after };
+}
 
 // ─── Compose Before Hooks ──────────────────────────────────────────
 // Chains multiple before-hooks. Short-circuits on the first `block: true`.

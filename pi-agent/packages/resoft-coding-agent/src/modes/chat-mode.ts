@@ -1,12 +1,16 @@
 import { ResoftAgent } from "@resoft/agent-core";
 import type { TeamConfig } from "../config/team-config.ts";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 
 export interface ChatModeConfig {
   platform?: string;
   projectName?: string;
   projectRoot?: string;
   autoReview?: boolean;
-  model?: unknown;
+  model?: { provider: string; model: string; apiKey: string };
+  sessionId?: string;
 }
 
 export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig) {
@@ -59,6 +63,16 @@ export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig
     }
   });
 
+  const sessionId = config.sessionId ?? `session-${Date.now()}`;
+  const history: unknown[] = [];
+
+  // Load existing session if available
+  const existingMessages = loadSession(sessionId);
+  if (existingMessages.length > 0) {
+    console.log(`  Loaded ${existingMessages.length} messages from session "${sessionId}"`);
+    history.push(...existingMessages);
+  }
+
   console.log(`\n💡 Commands: /quit to exit, /review to trigger review, /help for more`);
   rl.prompt();
 
@@ -77,7 +91,7 @@ export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig
     }
 
     if (input === "/help") {
-      console.log(`\nCommands:\n  /quit, /exit    Exit the chat\n  /review         Trigger code review on last response\n  /help           Show this help\n`);
+      console.log(`\nCommands:\n  /quit, /exit    Exit the chat\n  /review         Trigger code review\n  /save           Save current session\n  /sessions       List saved sessions\n  /load <id>      Load a saved session (requires restart)\n  /help           Show this help\n`);
       rl.prompt();
       continue;
     }
@@ -88,9 +102,41 @@ export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig
       continue;
     }
 
+    if (input === "/save") {
+      saveSession(sessionId, history);
+      console.log(`Session saved: ${sessionId}`);
+      rl.prompt();
+      continue;
+    }
+
+    if (input === "/sessions") {
+      const sessions = listSessions();
+      if (sessions.length === 0) {
+        console.log("No saved sessions.");
+      } else {
+        console.log(`Saved sessions (${sessions.length}):`);
+        for (const s of sessions) {
+          console.log(`  ${s}${s === sessionId ? " ← current" : ""}`);
+        }
+      }
+      rl.prompt();
+      continue;
+    }
+
+    if (input.startsWith("/load ")) {
+      const targetId = input.slice(6).trim();
+      console.log(`To load session "${targetId}", restart with: resoft chat --session ${targetId}`);
+      rl.prompt();
+      continue;
+    }
+
     // Send to agent
     try {
-      await agent.prompt(input);
+      history.push({ role: "user", content: input });
+      const result = await agent.prompt(input);
+      history.push({ role: "assistant", content: typeof result === "string" ? result : JSON.stringify(result) });
+      // Auto-save after each prompt
+      saveSession(sessionId, history);
     } catch (err: any) {
       console.error(`\n❌ Error: ${err.message}`);
     }
@@ -99,4 +145,38 @@ export async function runChatMode(config: ChatModeConfig, teamConfig: TeamConfig
   }
 
   return agent;
+}
+
+function getSessionDir(): string {
+  const dir = join(homedir(), ".resoft", "sessions");
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function saveSession(sessionId: string, messages: unknown[]): void {
+  try {
+    const dir = getSessionDir();
+    writeFileSync(join(dir, `${sessionId}.json`), JSON.stringify(messages, null, 2), "utf-8");
+  } catch { /* ignore */ }
+}
+
+function loadSession(sessionId: string): unknown[] {
+  try {
+    const dir = getSessionDir();
+    const path = join(dir, `${sessionId}.json`);
+    if (existsSync(path)) {
+      return JSON.parse(readFileSync(path, "utf-8"));
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function listSessions(): string[] {
+  try {
+    const { readdirSync } = require("node:fs");
+    const dir = getSessionDir();
+    return readdirSync(dir).filter((f: string) => f.endsWith(".json")).map((f: string) => f.replace(".json", ""));
+  } catch {
+    return [];
+  }
 }

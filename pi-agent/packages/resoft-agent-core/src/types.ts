@@ -85,7 +85,7 @@ export interface ResoftAgentConfig {
   projectRoot?: string;
   platform?: ETLPlatform;
   systemPrompt?: string;
-  model?: unknown;
+  model?: { provider: string; model: string; apiKey: string };
   tools?: AgentTool[];
   rules?: CodingRule[];
   securityRules?: CodingRule[];
