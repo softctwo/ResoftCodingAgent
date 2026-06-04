@@ -6,8 +6,10 @@
 
 基于 [earendil-works/pi](https://github.com/earendil-works/pi) agent 扩展，专注 SQL/PySpark/Flink/dbt 数据工程
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue)](docs/CHANGELOG.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![Tests](https://img.shields.io/badge/tests-14%2F14-brightgreen)]()
+[![TypeScript](https://img.shields.io/badge/type--errors-0-brightgreen)]()
 [![License](https://img.shields.io/badge/license-private-red)]()
 
 </div>
@@ -20,30 +22,35 @@ ResoftCodingAgent 是面向数据工程团队的 AI 编程助手，在 pi agent 
 
 - **增量规则引擎** — 只检查变更行，大文件秒级审查，diff 追踪 + 规则历史
 - **Skill 自动触发** — 自动检测项目平台（Spark/Flink/dbt/SQL），按需启用 Skill
-- **代码模板库** — 14 个内置 ETL 模板，一键生成 Spark 作业、Flink 管道、dbt 模型
-- **模板 CLI 集成** — `resoft template list|search|render` 完整命令行支持
-- **Skill 自动检测** — `resoft skill detect` 扫描项目，平台检测 + 可视化推荐
-- **终端美化输出** — ANSI 颜色、表格、进度条，审查结果结构化展示
+- **代码模板库** — 14 个内置 ETL 模板，交互式变量提示，一键生成 Spark 作业、Flink 管道、dbt 模型
+- **CLI 完整命令** — chat/review/ci/stats/dashboard/template/skill/init 全场景覆盖
+- **交互式 REPL** — Chat 模式完整 readline 循环，支持 `/quit /help /review /save /sessions` 命令
+- **会话管理** — 自动保存到 `~/.resoft/sessions/`，多会话切换
 - **CI/CD 流水线** — GitHub Actions 自动审查 PR，Pre-commit Hook，JSON/SARIF 输出
-- **团队 Dashboard** — 内置 Web 服务器，审查概览/问题追踪/用量统计/团队面板 4 页
-- **用量统计** — Token 计数、模型成本预估、日/周趋势报告、CSV 导出
+- **团队 Dashboard** — 内置 Web 服务器，审查概览/问题追踪/用量统计/团队面板，JSON 持久化
+- **用量统计** — Token 精确估算（BPE 感知）、6 模型成本、日/周趋势报告、CSV 导出
 - **社区 Skill 集成** — 内置 10 个社区精华 Skill（TDD、前后端工作流、上下文管理等）
 - **多平台支持** — SQL、PySpark、Flink SQL、dbt，自动检测并注入平台上下文
 - **团队编码规则** — YAML 配置化规则集，Git 版本控制，全团队共享
 - **零侵入架构** — 不改动 pi agent 核心代码，通过 npm workspace 扩展
+- **一键安装** — `curl | bash` 式安装脚本，3 步完成部署
+- **统一日志** — 结构化日志，`RESOFT_LOG_LEVEL=debug` 调试模式
 
 ## 快速开始
 
-### 环境要求
+### 一键安装
 
-| 依赖 | 版本 |
-|------|------|
-| Node.js | ≥ 20 |
-| npm | ≥ 9 |
-| Python | ≥ 3.9 (Skill 脚本) |
-| Git | ≥ 2.30 |
+```bash
+# 推荐：一键安装
+curl -fsSL https://raw.githubusercontent.com/softctwo/ResoftCodingAgent/main/install.sh | bash
 
-### 安装
+# 或指定安装目录和仓库
+export RESOFT_HOME=/opt/resoft
+export RESOFT_REPO=git@github.com:your-team/ResoftCodingAgent.git
+curl -fsSL https://raw.githubusercontent.com/softctwo/ResoftCodingAgent/main/install.sh | bash
+```
+
+### 手动安装
 
 ```bash
 # 1. 克隆项目
@@ -71,14 +78,26 @@ npm link
 resoft --help     # ✅ 全局可用
 ```
 
+### 环境要求
+
+| 依赖 | 版本 |
+|------|------|
+| Node.js | ≥ 20 |
+| npm | ≥ 9 |
+| Git | ≥ 2.30 |
+
 ### 第一个 ETL 任务
 
 ```bash
 # 进入交互模式（SQL 平台）
 npm run resoft chat -p sql
 
-# 开始对话
-> 写一个每日销售额汇总SQL，表是 raw_orders(id,amount,order_date)
+# REPL 循环开始，开始对话
+sql > 写一个每日销售额汇总 SQL，表是 raw_orders(id,amount,order_date)
+
+# 会话自动保存，下次启动恢复
+sql > /save
+sql > /quit
 ```
 
 ### 全部命令
@@ -90,14 +109,25 @@ npm run resoft chat -p spark     # Spark 模式
 npm run resoft chat -p flink     # Flink 模式
 npm run resoft chat -p dbt       # dbt 模式
 
+# Chat 内置命令：
+#  /quit, /exit    退出
+#  /help           帮助
+#  /review         触发代码审查
+#  /save           保存当前会话
+#  /sessions       列出已保存会话
+#  /load <id>      加载指定会话
+
 # ─── 增量代码审查 ───
-npm run resoft review orders.sql                     # 全量审查
+npm run resoft review orders.sql                     # 单文件审查
+npm run resoft review src/etl/                       # 批量目录扫描
 npm run resoft review --incremental etl.py -p spark  # 增量审查（仅变更行）
+npm run resoft review --staged -p sql               # 审查暂存区文件
 
 # ─── CI/CD 流水线 ───
 npm run resoft ci --files "orders.sql,etl.py"                    # CI 模式 (exit code)
 npm run resoft ci --files "*.sql" --format json --min-severity error
 npm run resoft ci --files "*.sql" --format sarif                  # SARIF 输出
+npm run resoft ci --files "*.sql" --format json --fail-on-error  # 严格模式
 
 # ─── 团队 Dashboard ───
 npm run resoft dashboard                          # 启动 Web (http://127.0.0.1:3456)
@@ -114,18 +144,32 @@ npm run resoft stats export -o usage.json
 npm run resoft template list                        # 列出所有模板
 npm run resoft template list --platform spark        # 按平台筛选
 npm run resoft template search -k "jdbc"            # 搜索模板
-npm run resoft template render -i spark-read-jdbc \  # 渲染模板
+npm run resoft template render -i spark-read-jdbc \  # 渲染模板（缺变量会交互提示）
   --vars '{"SOURCE_TABLE":"users","JDBC_URL":"jdbc:mysql://db"}'
 
 # ─── Skill 管理 ───
-npm run resoft skill list                    # 查看所有 Skill
-npm run resoft skill detect                  # 自动检测当前项目
-npm run resoft skill detect ./path/to/project # 检测指定目录
+npm run resoft skill list                                # 查看所有 Skill
+npm run resoft skill detect                              # 检测当前项目
+npm run resoft skill detect ./path/to/project            # 检测指定目录
+npm run resoft skill detect --format json                # JSON 输出（CI 友好）
 
 # ─── 项目初始化 ───
 npm run resoft init spark-job    # Spark 作业模板
 npm run resoft init flink-job    # Flink 管道模板
 npm run resoft init dbt-project  # dbt 项目模板
+```
+
+### 安装 Pre-commit Hook
+
+```bash
+# 在 git 仓库中安装
+ln -sf $(pwd)/scripts/pre-commit.sh .git/hooks/pre-commit
+
+# Hook 特性：
+#  - 只检查暂存的 ETL 文件 (.sql/.py/.java/.scala)
+#  - 无 API Key 时优雅跳过
+#  - dist 未构建时提示
+#  - 发现问题阻止提交（可用 git commit --no-verify 跳过）
 ```
 
 ## 架构
@@ -136,15 +180,15 @@ ResoftCodingAgent
 ├── 📦 resoft-coding-agent             CLI 工具层
 │   ├── CLI (commander.js)             resoft chat/review/ci/stats/dashboard
 │   ├── Modes                          模式分发
-│   │   ├── chat-mode.ts              交互开发
-│   │   ├── review-mode.ts            增量规则审查 + 美化输出
+│   │   ├── chat-mode.ts              交互 REPL + 会话管理
+│   │   ├── review-mode.ts            增量审查 + 批量目录扫描
 │   │   ├── ci-mode.ts                CI 模式 (exit code + 多格式输出)
-│   │   ├── template-mode.ts          模板列表/搜索/渲染/导出
-│   │   ├── skill-detect.ts           项目扫描 + 平台检测 + Skill 推荐
+│   │   ├── template-mode.ts          模板列表/搜索/渲染/交互式提示
+│   │   ├── skill-detect.ts           项目扫描 + 平台检测 + JSON 输出
 │   │   ├── stats-mode.ts             用量摘要/日趋势/成本对比/导出
 │   │   └── init-mode.ts              项目初始化
-│   ├── Dashboard                      内置 Web 仪表盘
-│   │   ├── server.ts                 HTTP 服务器
+│   ├── Dashboard                      内置 Web 仪表盘（JSON 持久化）
+│   │   ├── server.ts                 HTTP 服务器 + 持久化存储
 │   │   ├── routes.ts                 API (summary/issues/usage/team) + POST record
 │   │   └── views.ts                  4 页面 (Overview/Issues/Usage/Team) HTML
 │   ├── Extensions                     pi Extension (ETL 代码审查)
@@ -156,6 +200,12 @@ ResoftCodingAgent
 │   ├── rules/                         增量规则引擎
 │   │   ├── DiffTracker                文件哈希 + 行级差异追踪
 │   │   └── IncrementalRuleEngine      变更块审查 + 规则摘要 + 历史
+│   ├── hooks/                         Hook 链框架
+│   │   ├── SecurityCheckHook          安全审查（DROP TABLE/SQL 注入）
+│   │   ├── SqlReviewHook              SQL 规则审查
+│   │   ├── FormatCheckHook            格式检查
+│   │   ├── DbtRefCheckHook            dbt ref() 名称验证
+│   │   └── FlinkCheckpointHook        Flink 检查点/水位线检查
 │   ├── skills/                        Skill 管理
 │   │   ├── AutoSkillTrigger           平台检测 + 内容匹配 + 自动触发
 │   │   └── SkillRegistry              注册/启禁/批量管理
@@ -165,14 +215,13 @@ ResoftCodingAgent
 │   ├── pipeline/                      CI/CD 流水线
 │   │   └── CIReporter                 text/json/sarif/checkstyle 格式化
 │   ├── stats/                         用量统计
-│   │   ├── TokenCounter               Token 计数 + 会话 + 日聚合
-│   │   └── CostCalculator             模型定价 + 月度预估
-│   ├── Hooks                          审查 Hook 链 (SQL/安全/格式)
-│   ├── Context                        平台上下文注入
-│   ├── ContextDetector                自动平台检测
-│   └── Tools                          ETL 专用工具
+│   │   ├── TokenCounter               BPE 精准估算 + 实际 usage 记录
+│   │   └── CostCalculator             6 模型定价 + 月度预估
+│   ├── context/                       平台上下文注入
+│   ├── tools/                         ETL 专用工具（文件读写/SQL格式化/验证）
+│   └── utils/                         工具集（结构日志/错误处理）
 │
-├── 📦 pi-agent (earendil-works/pi)    基础框架
+├── 📦 pi-agent (earendil-works/pi)    基础框架（不修改）
 │   ├── packages/agent                 Agent 运行时
 │   ├── packages/ai                    LLM API (DeepSeek/Anthropic/OpenAI)
 │   └── packages/coding-agent          SDK + 会话管理
@@ -191,13 +240,20 @@ ResoftCodingAgent
 │   ├── context-engineering/  上下文管理 + Token 预算
 │   ├── composio/             GitHub/Slack/DB 集成
 │   ├── antfu-skills/         进阶 Skill 设计模式
-│   └── awesome-skills/       技能导航目录
+│   ├── awesome-skills/       技能导航目录
+│   └── custom/               自定义 Skill 模板
 │
 ├── ⚙️ team-config/                     团队共享配置
 │   ├── rules/      编码规则集 (SQL/Spark/命名/Git)
 │   └── registry/   Skill 注册表 (15 个 Skill)
 │
-└── 📚 docs/                           产品文档
+├── 🔧 scripts/                         自动化脚本
+│   ├── pre-commit.sh   Git pre-commit hook
+│   └── ...
+│
+├── 🚀 install.sh                       一键安装脚本
+│
+└── 📚 docs/                           产品文档（10 份）
     ├── install-guide.md
     ├── user-manual.md
     ├── quick-start.md
@@ -220,11 +276,12 @@ import { ResoftAgent } from "@resoft/agent-core";
 import { IncrementalRuleEngine } from "@resoft/agent-core/rules";
 import { TemplateEngine, BUILTIN_TEMPLATES } from "@resoft/agent-core/templates";
 import { SkillRegistry } from "@resoft/agent-core/skills";
+import { logger } from "@resoft/agent-core";
 
 const agent = new ResoftAgent({
   projectName: "daily-revenue-etl",
   platform: "sql",
-  model: getModel("deepseek", "deepseek-v4-pro"),
+  model: { provider: "deepseek", model: "deepseek-v4-pro", apiKey: process.env.DEEPSEEK_API_KEY! },
   autoReview: true,
 });
 
@@ -246,6 +303,10 @@ const code = tmpl.render("spark-read-jdbc", {
   JDBC_URL: "jdbc:mysql://localhost:3306/dw",
 });
 
+// 统一日志
+logger.info("Agent initialized", { platform: "sql" });
+logger.debug("Skill auto-triggered", { skills: enabled });
+
 await agent.prompt("生成每日营收汇总SQL");
 ```
 
@@ -257,6 +318,18 @@ await agent.prompt("生成每日营收汇总SQL");
 | **PySpark** | `spark` | DataFrame API、窗口函数、性能调优、分区策略 |
 | **Flink** | `flink` | Flink SQL DDL、窗口聚合、Checkpoint、CDC |
 | **dbt** | `dbt` | 分层建模、Jinja 模板、增量模型、测试 |
+
+## Hook 链
+
+5 个审查 Hook，按 before/after 分阶段执行，支持 compose 组合：
+
+| Hook | 阶段 | 功能 |
+|------|------|------|
+| SecurityCheck | before | SQL 注入检测、DROP TABLE 拦截 |
+| SqlReview | after | SQL 编码规则审查（team-config/rules/sql-rules.yaml） |
+| FormatCheck | after | SQL 格式化检查 |
+| DbtRefCheck | after | dbt `ref()` 模型名称验证、materialization 检查 |
+| FlinkCheckpoint | after | Flink 检查点/水位线配置验证 |
 
 ## 增量规则引擎
 
@@ -286,6 +359,8 @@ const r2 = engine.reviewFile("etl.sql", modifiedContent);
 | **SQL** | 3 | CTE 链、SCD Type 2、数据质量检查 |
 | **工具** | 1 | Airflow DAG |
 
+模板渲染缺少变量时自动交互提示，无需手动传入 `--vars`。
+
 ## 团队编码规则
 
 规则集使用 YAML 配置，放在 `team-config/rules/` 目录：
@@ -313,10 +388,11 @@ const r2 = engine.reviewFile("etl.sql", modifiedContent);
 ## Skill 管理（15 个 Skill）
 
 ```bash
-npm run resoft skill list          # 查看所有 Skill
-npm run resoft skill detect        # 自动检测项目推荐 Skill
-npm run resoft skill enable <name> # 启用
-npm run resoft skill disable <name># 禁用
+npm run resoft skill list                     # 查看所有 Skill
+npm run resoft skill detect                   # 检测当前项目
+npm run resoft skill detect --format json     # JSON 输出（CI 友好）
+npm run resoft skill enable <name>            # 启用
+npm run resoft skill disable <name>           # 禁用
 ```
 
 ### ETL Skills（4 个）
@@ -341,6 +417,31 @@ npm run resoft skill disable <name># 禁用
 | antfu-skills | 进阶 Skill 设计模式（组合/懒加载/参数化） |
 | awesome-skills | 技能导航目录（按类别/平台/流程浏览） |
 
+## CI/CD 集成
+
+### GitHub Actions
+
+PR 提交或 push 到 main 时自动触发 ETL 文件审查：
+
+```yaml
+# .github/workflows/resoft-review.yml
+- PR 时审查变更的 .sql/.py/.java/.scala 文件
+- 输出 JSON 格式结果
+- --fail-on-error 阻止问题合并
+```
+
+### Pre-commit Hook
+
+```bash
+# 安装
+ln -sf scripts/pre-commit.sh .git/hooks/pre-commit
+
+# 行为
+- 暂存 ETL 文件时自动审查
+- 有问题阻止提交（git commit --no-verify 跳过）
+- 无 API Key 时优雅跳过
+```
+
 ## 技术栈
 
 - **Agent 框架**: [earendil-works/pi](https://github.com/earendil-works/pi) (TypeScript)
@@ -348,7 +449,9 @@ npm run resoft skill disable <name># 禁用
 - **构建工具**: tsgo (TypeScript 原生编译器) + npm workspaces
 - **运行时**: Node.js ≥ 20 + ESM
 - **CLI**: Commander.js
+- **测试**: Vitest (14/14 通过)
 - **配置**: YAML (团队规则 + Skill 注册表)
+- **日志**: 内置 Logger（支持 RESOFT_LOG_LEVEL 环境变量）
 
 ## 文档
 
@@ -370,6 +473,9 @@ npm run resoft skill disable <name># 禁用
 - [x] v0.2.0 — 增量规则引擎、Skill 自动触发、代码模板库、10 个社区 Skill
 - [x] v0.3.0 — 模板 CLI 集成、Skill 自动检测命令、终端美化输出
 - [x] v1.0.0 — 流水线集成、团队 Dashboard、用量统计
+- [x] v1.1.0 — Chat REPL、Dashboard 持久化、ETL 工具实现、测试覆盖
+- [x] v1.2.0 — dbt/Flink Hooks、会话管理、批量审查、统一日志
+- [ ] v1.3.0 — IDE 插件（VSCode）、GitLab CI 模板、Playwright E2E 测试
 
 ## License
 
